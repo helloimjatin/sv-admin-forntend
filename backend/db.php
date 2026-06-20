@@ -1,5 +1,5 @@
 <?php
-$host = "host";
+$host = "localhost";
 $dbname = "sehat06c_sehatvaani_db";
 $username = "root"; // 'root' is the default username for local servers
 $password = "";     // The password is intentionally left blank for local servers

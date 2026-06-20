@@ -1,9 +1,6 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: index.html');
-    exit;
-}
+require_once 'backend/check_role.php';
+hasAccess(['Super Admin']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -295,6 +292,11 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
                 </div>
 
                 <div class="flex flex-col gap-stack-sm">
+                    <label for="staff-username" class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Username</label>
+                    <input type="text" id="staff-username" required class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors" placeholder="e.g. dr.janesmith" />
+                </div>
+
+                <div class="flex flex-col gap-stack-sm">
                     <label for="staff-email" class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Email Address</label>
                     <input type="email" id="staff-email" required class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors" placeholder="e.g. janesmith@sehatvaani.com" />
                 </div>
@@ -540,13 +542,12 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
         async function loadStaff() {
             try {
                 const response = await fetch(API_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
 
+                // Read body first so we can show the real server error message
                 const json = await response.json();
-                if (json.status !== 'success') {
-                    throw new Error(json.message || 'API error');
+
+                if (!response.ok || json.status !== 'success') {
+                    throw new Error(json.message || `HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 allStaff = json.data || [];
@@ -609,40 +610,55 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
         }
 
         // --- Submit Logic (Add / Edit) ---
-        function handleStaffSubmit(e) {
+        async function handleStaffSubmit(e) {
             e.preventDefault();
-            
-            const id = document.getElementById('staff-id').value;
-            const name = document.getElementById('staff-name').value;
-            const email = document.getElementById('staff-email').value;
-            const role = document.getElementById('staff-role').value;
+
+            const id       = document.getElementById('staff-id').value;
+            const name     = document.getElementById('staff-name').value;
+            const username = document.getElementById('staff-username').value;
+            const email    = document.getElementById('staff-email').value;
+            const role     = document.getElementById('staff-role').value;
+            const password = document.getElementById('staff-password').value;
 
             if (id) {
-                // Edit mode (mock update)
+                // Edit mode (mock update — wire to an edit API when ready)
                 const index = allStaff.findIndex(s => s.id == id);
                 if (index !== -1) {
-                    allStaff[index].name = name;
+                    allStaff[index].name  = name;
                     allStaff[index].email = email;
-                    allStaff[index].role = role;
+                    allStaff[index].role  = role;
                     showToast('Staff member updated successfully.');
                 }
+                updateStats(allStaff);
+                applyFilter(currentFilter, document.getElementById('search-input').value);
+                closeStaffModal();
             } else {
-                // Add mode (mock insert)
-                const newMember = {
-                    id: allStaff.length > 0 ? Math.max(...allStaff.map(s => s.id)) + 1 : 1,
-                    name: name,
-                    email: email,
-                    role: role,
-                    last_login: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                    created_at: new Date().toISOString()
-                };
-                allStaff.unshift(newMember);
-                showToast('New staff member added successfully.');
-            }
+                // Add mode — POST to api/add_staff.php
+                const formData = new FormData();
+                formData.append('name',     name);
+                formData.append('username', username);
+                formData.append('email',    email);
+                formData.append('password', password);
+                formData.append('role_id',  role);
 
-            updateStats(allStaff);
-            applyFilter(currentFilter, document.getElementById('search-input').value);
-            closeStaffModal();
+                try {
+                    const response = await fetch('/api/add_staff.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const json = await response.json();
+
+                    if (json.status === 'success') {
+                        showToast('New staff member added successfully.');
+                        closeStaffModal();
+                        loadStaff(); // Refresh table from API
+                    } else {
+                        showToast(json.message || 'Failed to add staff member.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Network error. Please try again.', 'error');
+                }
+            }
         }
 
         // --- Delete Logic ---

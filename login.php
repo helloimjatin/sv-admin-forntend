@@ -8,15 +8,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
 
-    // Use parameterized query to prevent SQL injection and check if account is active
-    $stmt = $pdo->prepare('SELECT * FROM admin_users WHERE email = :email AND is_active = 1 LIMIT 1');
+    // Use parameterized query with JOIN to retrieve role name; check is_active in WHERE
+    $stmt = $pdo->prepare(
+        'SELECT u.id, u.email, u.password_hash, u.is_active, r.name AS role_name
+         FROM admin_users u
+         INNER JOIN admin_roles r ON u.role_id = r.id
+         WHERE u.email = :email AND u.is_active = 1
+         LIMIT 1'
+    );
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
 
     // Password comparison using SHA-256 hashing
     if ($user && $user['password_hash'] === hash('sha256', $password)) {
         $_SESSION['admin_logged_in'] = true;
-        $_SESSION['admin_id'] = $user['id']; // optional: store user ID
+        $_SESSION['admin_id'] = $user['id'];
+        $_SESSION['admin_role'] = $user['role_name'];
         // Redirect to dashboard.php on success
         header('Location: dashboard.php');
         exit;
