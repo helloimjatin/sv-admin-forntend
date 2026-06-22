@@ -138,11 +138,11 @@ hasAccess(['Super Admin']);
         }
     </style>
 </head>
-<body class="bg-secondary-fixed min-h-screen flex flex-col dark:bg-inverse-surface">
+<body class="bg-secondary-fixed min-h-screen flex flex-col dark:bg-inverse-surface font-body-md text-on-background">
     <!-- Container -->
-    <div class="flex h-screen bg-background dark:bg-inverse-surface">
+    <div class="flex h-screen bg-background dark:bg-inverse-surface w-full overflow-hidden">
         <!-- Sidebar -->
-        <aside class="w-64 bg-surface-container-low dark:bg-surface-dim border-r border-outline-variant flex flex-col p-6 overflow-y-auto">
+        <aside class="w-64 bg-surface-container-low dark:bg-surface-dim border-r border-outline-variant flex flex-col p-6 overflow-y-auto shrink-0">
             <div class="flex flex-col gap-base mb-8">
                 <img alt="SehatVaani Logo" class="h-10 w-auto object-contain mr-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWQldk6JtoE4LIjgZKnXi5tieh7nwkCU3pRJ8zXXLOgMeDepRf2Ea4aeSyE-jHqme1z_KeX0v3FjucVBrrgSahEOAl6DkfhIOi9K5OzU1yPUJHMMt-wRbnV2CPASElg4QAmCVyFxOhC8-yqxqHijOJptDp0PgWE2_1JsGS_beRCyXlE4C2-prbkeVxbV3ypUqFWssWKp2922rpnx48I669LM6O8WtI-0r_pBXqE5ZI-VhSMBhTy4QPDBFQVNa6Ka6SibhS-a4f09yd"/>
                 <span class="text-on-surface-variant font-body-md text-body-md mt-2">Healthcare Management</span>
@@ -163,6 +163,9 @@ hasAccess(['Super Admin']);
                 <a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low p-3 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all" href="billing.php">
                     <span class="material-symbols-outlined" data-icon="payments">payments</span> Billing
                 </a>
+                <a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low p-3 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all" href="subscriptions.php">
+                    <span class="material-symbols-outlined" data-icon="card_membership">card_membership</span> Subscriptions
+                </a>
                 <a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low p-3 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all" href="profile.php">
                     <span class="material-symbols-outlined" data-icon="settings">settings</span> Settings
                 </a>
@@ -178,7 +181,7 @@ hasAccess(['Super Admin']);
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto p-container-padding flex flex-col gap-stack-lg">
+        <main class="flex-1 min-w-0 overflow-y-auto p-container-padding flex flex-col gap-stack-lg">
             <div class="flex justify-between items-center">
                 <h1 class="font-display-lg text-display-lg text-on-surface">Staff Directory</h1>
                 <button onclick="openAddStaffModal()" class="bg-primary text-on-primary font-label-sm text-label-sm px-4 py-2.5 rounded-lg hover:bg-primary-container transition-colors flex items-center gap-2 font-semibold shadow-sm active:scale-[0.98]">
@@ -304,9 +307,9 @@ hasAccess(['Super Admin']);
                 <div class="flex flex-col gap-stack-sm">
                     <label for="staff-role" class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Role</label>
                     <select id="staff-role" required class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors">
-                        <option value="Admin">Admin</option>
-                        <option value="Moderator">Moderator</option>
-                        <option value="Support">Support</option>
+                        <option value="2">Admin</option>
+                        <option value="4">Moderator</option>
+                        <option value="3">Support</option>
                     </select>
                 </div>
 
@@ -345,12 +348,20 @@ hasAccess(['Super Admin']);
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
-        const API_URL = '/api/get_staff.php?api_key=sehat_live_2026_secure_key';
+        const API_URL = 'api/get_staff.php?api_key=sehat_live_2026_secure_key';
         let allStaff = [];
         let currentFilter = 'all';
         let deleteTargetId = null;
 
         // --- Utility Functions ---
+        function getRoleIdByName(roleName) {
+            const normalized = (roleName || '').toLowerCase();
+            if (normalized === 'admin') return '2';
+            if (normalized === 'content manager' || normalized === 'moderator') return '4';
+            if (normalized === 'support agent' || normalized === 'support') return '3';
+            return '2';
+        }
+
         function escapeHtml(text) {
             if (text === null || text === undefined) return '--';
             const div = document.createElement('div');
@@ -374,11 +385,11 @@ hasAccess(['Super Admin']);
                 return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
                     <span class="w-1.5 h-1.5 mr-1 bg-purple-600 rounded-full"></span>Admin
                 </span>`;
-            } else if (normalized === 'moderator') {
+            } else if (normalized === 'moderator' || normalized === 'content manager') {
                 return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                     <span class="w-1.5 h-1.5 mr-1 bg-blue-600 rounded-full"></span>Moderator
                 </span>`;
-            } else if (normalized === 'support') {
+            } else if (normalized === 'support' || normalized === 'support agent') {
                 return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400">
                     <span class="w-1.5 h-1.5 mr-1 bg-teal-600 rounded-full"></span>Support
                 </span>`;
@@ -459,8 +470,8 @@ hasAccess(['Super Admin']);
             staffList.forEach(s => {
                 const role = (s.role || '').toLowerCase();
                 if (role === 'admin') adminCount++;
-                else if (role === 'moderator') modCount++;
-                else if (role === 'support') supportCount++;
+                else if (role === 'moderator' || role === 'content manager') modCount++;
+                else if (role === 'support' || role === 'support agent') supportCount++;
             });
 
             const elTotal = document.getElementById('stat-total');
@@ -502,9 +513,9 @@ hasAccess(['Super Admin']);
             if (filter === 'admin') {
                 filtered = filtered.filter(s => (s.role || '').toLowerCase() === 'admin');
             } else if (filter === 'moderator') {
-                filtered = filtered.filter(s => (s.role || '').toLowerCase() === 'moderator');
+                filtered = filtered.filter(s => (s.role || '').toLowerCase() === 'content manager' || (s.role || '').toLowerCase() === 'moderator');
             } else if (filter === 'support') {
-                filtered = filtered.filter(s => (s.role || '').toLowerCase() === 'support');
+                filtered = filtered.filter(s => (s.role || '').toLowerCase() === 'support agent' || (s.role || '').toLowerCase() === 'support');
             }
 
             // Filter by Search Term
@@ -564,7 +575,7 @@ hasAccess(['Super Admin']);
             document.getElementById('staff-id').value = '';
             document.getElementById('staff-name').value = '';
             document.getElementById('staff-email').value = '';
-            document.getElementById('staff-role').value = 'Admin';
+            document.getElementById('staff-role').value = '2';
             document.getElementById('staff-password').value = '';
             document.getElementById('staff-password').required = true;
             document.getElementById('password-field-container').classList.remove('hidden');
@@ -586,7 +597,7 @@ hasAccess(['Super Admin']);
             document.getElementById('staff-id').value = member.id;
             document.getElementById('staff-name').value = member.name || '';
             document.getElementById('staff-email').value = member.email || '';
-            document.getElementById('staff-role').value = member.role || 'Admin';
+            document.getElementById('staff-role').value = getRoleIdByName(member.role);
             document.getElementById('staff-password').value = '';
             document.getElementById('staff-password').required = false;
             document.getElementById('password-field-container').classList.add('hidden'); // No password changing in this modal
@@ -626,7 +637,12 @@ hasAccess(['Super Admin']);
                 if (index !== -1) {
                     allStaff[index].name  = name;
                     allStaff[index].email = email;
-                    allStaff[index].role  = role;
+                    const roleNames = {
+                        '2': 'Admin',
+                        '3': 'Support Agent',
+                        '4': 'Content Manager'
+                    };
+                    allStaff[index].role  = roleNames[role] || 'Admin';
                     showToast('Staff member updated successfully.');
                 }
                 updateStats(allStaff);
@@ -642,7 +658,7 @@ hasAccess(['Super Admin']);
                 formData.append('role_id',  role);
 
                 try {
-                    const response = await fetch('/api/add_staff.php', {
+                    const response = await fetch('api/add_staff.php', {
                         method: 'POST',
                         body: formData
                     });

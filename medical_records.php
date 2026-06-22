@@ -122,11 +122,11 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
         }
     </style>
 </head>
-<body class="bg-secondary-fixed min-h-screen flex flex-col dark:bg-inverse-surface">
+<body class="bg-secondary-fixed min-h-screen flex flex-col dark:bg-inverse-surface font-body-md text-on-background">
     <!-- Container -->
-    <div class="flex h-screen bg-background dark:bg-inverse-surface">
+    <div class="flex h-screen bg-background dark:bg-inverse-surface w-full overflow-hidden">
         <!-- Sidebar -->
-        <aside class="w-64 bg-surface-container-low dark:bg-surface-dim border-r border-outline-variant flex flex-col p-6 overflow-y-auto">
+        <aside class="w-64 bg-surface-container-low dark:bg-surface-dim border-r border-outline-variant flex flex-col p-6 overflow-y-auto shrink-0">
             <div class="flex flex-col gap-base mb-8">
                 <img alt="SehatVaani Logo" class="h-10 w-auto object-contain mr-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWQldk6JtoE4LIjgZKnXi5tieh7nwkCU3pRJ8zXXLOgMeDepRf2Ea4aeSyE-jHqme1z_KeX0v3FjucVBrrgSahEOAl6DkfhIOi9K5OzU1yPUJHMMt-wRbnV2CPASElg4QAmCVyFxOhC8-yqxqHijOJptDp0PgWE2_1JsGS_beRCyXlE4C2-prbkeVxbV3ypUqFWssWKp2922rpnx48I669LM6O8WtI-0r_pBXqE5ZI-VhSMBhTy4QPDBFQVNa6Ka6SibhS-a4f09yd"/>
                 <span class="text-on-surface-variant font-body-md text-body-md mt-2">Healthcare Management</span>
@@ -147,6 +147,9 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
                 <a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low p-3 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all" href="billing.php">
                     <span class="material-symbols-outlined" data-icon="payments">payments</span> Billing
                 </a>
+                <a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low p-3 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all" href="subscriptions.php">
+                    <span class="material-symbols-outlined" data-icon="card_membership">card_membership</span> Subscriptions
+                </a>
                 <a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-low p-3 rounded-lg flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all" href="profile.php">
                     <span class="material-symbols-outlined" data-icon="settings">settings</span> Settings
                 </a>
@@ -162,7 +165,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto p-container-padding flex flex-col gap-stack-lg">
+        <main class="flex-1 min-w-0 overflow-y-auto p-container-padding flex flex-col gap-stack-lg">
             <div class="flex justify-between items-center">
                 <h1 class="font-display-lg text-display-lg text-on-surface">Medical Records</h1>
             </div>
@@ -335,7 +338,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     </div>
 
     <script>
-        const API_URL = '/api/get_medical_records.php?api_key=sehat_live_2026_secure_key';
+        const API_URL = 'api/get_medical_records.php?api_key=sehat_live_2026_secure_key';
         let allRecords = [];
         let currentFilter = 'all';
 
