@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-hanken);
+  --font-mono: var(--font-jetbrains);
+
+  /* SehatVaani original sky-blue palette */
+  --color-primary: #0ea5e9;
+  --color-primary-fixed: #bae6fd;
+  --color-primary-container: #0284c7;
+  --color-on-primary: #ffffff;
+  --color-on-primary-fixed: #082f49;
+
+  --color-background: #f8f9ff;
+  --color-surface: #f8f9ff;
+  --color-surface-card: #ffffff;
+  --color-surface-low: #eff4ff;
+  --color-surface-elevated: #e5eeff;
+  --color-secondary-fixed: #d3e7e0;
+
+  --color-border: #bccac1;
+  --color-text: #0b1c30;
+  --color-text-muted: #3d4943;
+  --color-outline-variant: #bccac1;
+
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-200: #bae6fd;
+  --color-brand-300: #7dd3fc;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+  --color-brand-700: #0369a1;
+  --color-brand-800: #075985;
+  --color-brand-900: #0c4a6e;
+}
+
+.dark {
+  --color-background: #0b1c30;
+  --color-surface: #0b1c30;
+  --color-surface-card: #111827;
+  --color-surface-low: #1e293b;
+  --color-surface-elevated: #213145;
+  --color-text: #eaf1ff;
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-hanken), system-ui, sans-serif;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fade-in 0.25s ease-out; }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(14,165,233,0.08) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.stat-card {
+  transition: all 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.10);
+}
+
+.field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+}
+.field-row:last-child { border-bottom: none; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
