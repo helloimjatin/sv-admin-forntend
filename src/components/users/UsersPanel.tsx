@@ -187,14 +187,6 @@ export function UsersPanel() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-        <StatCard label="Total Users" value={stats.total} icon={Users} color="brand" loading={loading} />
-        <StatCard label="Active / Trial" value={stats.active} icon={UserCheck} color="green" loading={loading} />
-        <StatCard label="Blocked / Suspended" value={stats.blocked} icon={UserX} color="red" loading={loading} />
-        <StatCard label="Pending Verify" value={stats.pending} icon={ShieldAlert} color="amber" loading={loading} />
-        <StatCard label="Premium" value={stats.premium} icon={Crown} color="violet" loading={loading} />
-      </div>
-
       {/* Filters */}
       <div className="sticky top-0 z-10 rounded-lg border border-outline-variant/50 bg-surface-card p-4 space-y-3 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-3">
@@ -204,7 +196,7 @@ export function UsersPanel() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && setQuery(search)}
-              placeholder="Search name, ID, email, mobile, Health ID, Aadhaar…"
+              placeholder="Search by Name, Mobile Number or User ID"
               className="flex-1 rounded-lg border border-outline-variant bg-surface px-4 py-2 text-sm outline-none focus:border-primary"
               aria-label="Search users"
             />
@@ -284,11 +276,8 @@ export function UsersPanel() {
                   </th>
                   <th className="p-3">User</th>
                   <th className="p-3">Contact</th>
-                  <th className="p-3">Verification</th>
                   <th className="p-3">Plan</th>
-                  <th className="p-3">Role</th>
                   <th className="p-3">Status</th>
-                  <th className="p-3">Doctor</th>
                   <th className="p-3">Health</th>
                   <th className="p-3">Last Login</th>
                   <th className="p-3">Registered</th>
@@ -297,8 +286,8 @@ export function UsersPanel() {
               </thead>
               <tbody>
                 {pageRows.map((u) => (
-                  <tr key={u.id} className="border-b border-outline-variant/30 hover:bg-surface-elevated/40">
-                    <td className="p-3">
+                  <tr key={u.id} className="border-b border-outline-variant/30 hover:bg-surface-elevated/40 cursor-pointer" onClick={() => router.push(`/profile/${u.id}`)}>
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selected.includes(u.id)}
@@ -314,86 +303,27 @@ export function UsersPanel() {
                           {getInitials(u.full_name)}
                         </div>
                         <div>
-                          <Link href={`/profile/${u.id}`} className="font-semibold hover:text-primary">
+                          <span className="font-semibold hover:text-primary">
                             {highlight(u.full_name, query)}
-                          </Link>
+                          </span>
                           <p className="text-[11px] font-mono text-text-muted">{highlight(u.user_id, query)}</p>
                         </div>
                       </div>
                     </td>
                     <td className="p-3 min-w-[160px]">
                       <p className="text-xs">{highlight(u.mobile, query)}</p>
-                      <p className="text-xs text-text-muted">{highlight(u.email, query)}</p>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex flex-wrap gap-1 max-w-[140px]">
-                        {u.verification.mobile && <Badge variant="success">Mobile</Badge>}
-                        {u.verification.email && <Badge variant="info">Email</Badge>}
-                        {u.verification.kyc && <Badge variant="purple">KYC</Badge>}
-                        {u.verification.doctor && <Badge variant="default">Doctor</Badge>}
-                        {u.verification.premium && <Badge variant="warning">Premium</Badge>}
-                      </div>
                     </td>
                     <td className="p-3 whitespace-nowrap">
                       <Badge variant={u.subscription_plan_id > 1 ? "purple" : "default"}>{u.subscription_plan}</Badge>
                     </td>
-                    <td className="p-3 capitalize text-xs whitespace-nowrap">{u.role.replace("_", " ")}</td>
                     <td className="p-3"><Badge variant={statusBadgeVariant(u.status)}>{u.status.replace("_", " ")}</Badge></td>
-                    <td className="p-3 text-xs whitespace-nowrap">{u.assigned_doctor || "—"}</td>
                     <td className="p-3 text-xs">{u.health_score ?? "—"}</td>
                     <td className="p-3 text-xs whitespace-nowrap">{u.last_login ? formatDateTime(u.last_login) : "Never"}</td>
                     <td className="p-3 text-xs whitespace-nowrap">{formatDate(u.created_at)}</td>
-                    <td className="p-3 relative overflow-visible" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuId((id) => (id === u.id ? null : u.id));
-                        }}
-                        className="p-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated"
-                        aria-label={`Actions for ${u.full_name}`}
-                        aria-expanded={menuId === u.id}
-                      >
-                        <MaterialIcon name="more_vert" size={18} />
-                      </button>
-                      {menuId === u.id && (
-                        <div className="absolute right-3 top-10 z-40 w-56 rounded-lg border border-outline-variant bg-surface-card shadow-lg py-1 text-sm animate-fade-in max-h-72 overflow-y-auto">
-                          {[
-                            { label: "View Profile", fn: () => router.push(`/profile/${u.id}`) },
-                            { label: "Edit", fn: () => router.push(`/users/new?edit=${u.id}`), admin: true },
-                            { label: "Appointments", fn: () => addToast("Appointments module linked", "info") },
-                            { label: "Prescriptions", fn: () => addToast("Opening prescriptions…", "info") },
-                            { label: "Lab Reports", fn: () => addToast("Open Lab Reports from the user profile", "info") },
-                            { label: "Subscription Mgmt", fn: () => router.push(`/profile/${u.id}#subscription`) },
-                            { label: "Billing History", fn: () => router.push(`/billing`) },
-                            { label: "Login History", fn: () => setLoginHistoryUser(u) },
-                            { label: "Device Management", fn: () => setDevicesUser(u) },
-                            { label: "Send Notification", fn: () => { setNotifyUser(u); setNotifyChannel("push"); } },
-                            { label: "Send Email", fn: () => { setNotifyUser(u); setNotifyChannel("email"); } },
-                            { label: "Reset Password", fn: () => addToast(`Password reset sent to ${u.email}`, "success") },
-                            ...(isSuper ? [{ label: "Impersonate User", fn: () => addToast(`Impersonation session started for ${u.full_name}`, "info") }] : []),
-                            { label: "Suspend", fn: () => runStatus(u, "suspended") },
-                            { label: "Activate", fn: () => runStatus(u, "active") },
-                            { label: "Block", fn: () => runStatus(u, "blocked") },
-                            { label: "Download Report", fn: () => { downloadUserReport(u); addToast("Report downloaded", "success"); } },
-                            { label: "Delete", fn: () => setConfirm({ type: "delete", user: u }), danger: true },
-                          ]
-                            .filter((item) => !("admin" in item && item.admin) || isAdmin)
-                            .map((item) => (
-                              <button
-                                key={item.label}
-                                type="button"
-                                onClick={() => { item.fn(); setMenuId(null); }}
-                                className={cn(
-                                  "w-full text-left px-3 py-2 hover:bg-surface-elevated",
-                                  "danger" in item && item.danger ? "text-red-600" : ""
-                                )}
-                              >
-                                {item.label}
-                              </button>
-                            ))}
-                        </div>
-                      )}
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <Link href={`/profile/${u.id}`} className="inline-flex rounded bg-primary text-white text-xs font-semibold px-3 py-1.5 hover:bg-primary-container">
+                        View
+                      </Link>
                     </td>
                   </tr>
                 ))}

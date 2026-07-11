@@ -157,13 +157,6 @@ export function PlansPanel() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard label="Total Plans" value={stats.total} icon={CreditCard} color="brand" loading={loading} />
-        <StatCard label="Active Plans" value={stats.active} icon={TrendingUp} color="green" loading={loading} />
-        <StatCard label="Drafts" value={stats.draft} icon={FileEdit} color="amber" loading={loading} />
-        <StatCard label="Active Subscribers" value={stats.subscribers} icon={Users} color="violet" loading={loading} />
-      </div>
-
       <div className="rounded-lg border border-outline-variant/50 bg-surface-card p-4 space-y-4">
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="flex flex-1 gap-2">
@@ -251,49 +244,67 @@ export function PlansPanel() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => onDropReorder(plan.id)}
-              className={cn(dragId === plan.id && "opacity-60")}
-            >
-              <PlanCard
-                plan={plan}
-                searchQuery={query}
-                menuOpen={menuOpenId === plan.id}
-                onMenuToggle={() => {
-                  setMenuOpenId((id) => (id === plan.id ? null : plan.id));
-                }}
-                dragHandleProps={{
-                  draggable: true,
-                  onDragStart: (e) => {
-                    e.stopPropagation();
-                    setDragId(plan.id);
-                  },
-                  onDragEnd: () => setDragId(null),
-                  onClick: (e) => e.stopPropagation(),
-                }}
-                onView={() => { setViewPlan(plan); setMenuOpenId(null); }}
-                onEdit={() => router.push(`/subscriptions/create?edit=${plan.id}`)}
-                onDuplicate={() => run(() => duplicatePlan(plan.id, editor), "Plan duplicated as draft")}
-                onDelete={() => { setConfirm({ type: "delete", plan }); setMenuOpenId(null); }}
-                onArchive={() => { setConfirm({ type: "archive", plan }); setMenuOpenId(null); }}
-                onToggleActive={() =>
-                  run(
-                    () => setPlanStatus(plan.id, plan.status === "active" ? "disabled" : "active", editor),
-                    plan.status === "active" ? "Plan deactivated" : "Plan activated"
-                  )
-                }
-                onSetRecommended={() => run(() => setRecommendedPlan(plan.id, editor), "Marked as recommended")}
-                onRankUp={() => run(() => changePlanRank(plan.id, "up", editor), "Rank updated")}
-                onRankDown={() => run(() => changePlanRank(plan.id, "down", editor), "Rank updated")}
-                onViewSubscribers={() => { setSubscribersPlan(plan); setMenuOpenId(null); }}
-                onAnalytics={() => { setAnalyticsPlan(plan); setMenuOpenId(null); }}
-              />
-            </div>
-          ))}
+        <div className="rounded-lg border border-outline-variant/50 bg-surface-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="bg-surface-low border-y border-outline-variant/50 text-[11px] uppercase tracking-wider text-text-muted">
+                  <th className="p-4">Plan Name</th>
+                  <th className="p-4">Price</th>
+                  <th className="p-4">Billing Cycle</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Active Subscribers</th>
+                  <th className="p-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {plans.map((plan) => (
+                  <tr
+                    key={plan.id}
+                    className="border-b border-outline-variant/30 hover:bg-surface-elevated/40 cursor-pointer h-14"
+                    onClick={() => setViewPlan(plan)}
+                  >
+                    <td className="p-4">
+                      <div className="font-semibold text-primary">{plan.name}</div>
+                      <div className="text-[10px] text-text-muted font-mono">{plan.plan_id}</div>
+                    </td>
+                    <td className="p-4 font-mono font-semibold">
+                      {formatCurrency(effectivePrice(plan))}
+                    </td>
+                    <td className="p-4 capitalize text-xs">
+                      {billingCycleLabel(plan.pricing.billing_cycle)}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={plan.status === "active" ? "success" : "default"}>
+                        {plan.status}
+                      </Badge>
+                    </td>
+                    <td className="p-4 font-mono text-xs text-text-muted">
+                      {plan.analytics.active_subscribers}
+                    </td>
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setViewPlan(plan)}
+                          className="rounded bg-primary text-white text-xs font-semibold px-3 py-1.5 hover:bg-primary-container"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/subscriptions/create?edit=${plan.id}`)}
+                          className="rounded border border-outline-variant text-xs font-semibold px-3 py-1.5 hover:bg-surface-elevated"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

@@ -364,8 +364,14 @@ export function CreateNotificationForm({ editId }: Props) {
             <SectionTitle icon="groups" title="Audience" description="Who should receive this" />
             {errors.audience && <p className={errorClass} role="alert">{errors.audience}</p>}
             <div className="flex flex-wrap gap-2">
-              {SEGMENT_OPTIONS.map((seg) => {
-                const active = (form.audience_filters.segments ?? []).includes(seg.value);
+              {[
+                { label: "All Users", value: "all_users" },
+                { label: "Free Users", value: "free" },
+                { label: "Premium Users", value: "premium" },
+                { label: "Expired Subscribers", value: "expired" },
+                { label: "Selected Users", value: "custom_segment" }
+              ].map((seg) => {
+                const active = (form.audience_filters.segments ?? []).includes(seg.value) || form.audience_type === seg.value;
                 return (
                   <button
                     key={seg.value}

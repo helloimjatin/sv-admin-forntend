@@ -10,14 +10,14 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { Menu } from "lucide-react";
 
 const navItems = [
-  { label: "Overview", href: "/dashboard", icon: "dashboard" },
-  { label: "Users", href: "/users", icon: "manage_accounts" },
-  { label: "Billing", href: "/billing", icon: "payments" },
-  { label: "Subscriptions", href: "/subscriptions", icon: "card_membership" },
-  { label: "Notifications", href: "/notifications", icon: "notifications" },
-  { label: "CMS / Pages", href: "/cms", icon: "article" },
-  { label: "App Config", href: "/app-config", icon: "tune", roles: ["Super Admin", "Admin"] },
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
+  { label: "User Management", href: "/users", icon: "manage_accounts" },
+  { label: "Subscription Management", href: "/subscriptions", icon: "card_membership" },
+  { label: "Payment Management", href: "/billing", icon: "payments" },
+  { label: "Notification Center", href: "/notifications", icon: "notifications" },
+  { label: "Static Pages", href: "/cms", icon: "article" },
   { label: "Settings", href: "/settings", icon: "settings" },
+  { label: "Audit Logs", href: "/audit-logs", icon: "assignment" },
 ];
 
 export function DashboardLayout({
@@ -69,10 +69,16 @@ export function DashboardLayout({
           })}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-2 pt-4">
-          <Link href="/help" className="text-text-muted hover:bg-surface-elevated p-3 rounded-lg flex items-center gap-3 text-sm transition-all">
-            <MaterialIcon name="help" size={20} /> Help Center
-          </Link>
+        <div className="mt-auto flex flex-col gap-2 pt-4 border-t border-outline-variant/40">
+          <div className="flex items-center gap-2 rounded-lg border border-outline-variant px-3 py-1.5 mb-2 bg-surface-card">
+            <div className="h-7 w-7 rounded-lg bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-xs font-bold shrink-0">
+              {adminEmail ? adminEmail.charAt(0).toUpperCase() : "A"}
+            </div>
+            <div className="text-xs min-w-0">
+              <p className="font-semibold leading-tight truncate">{role}</p>
+              <p className="text-text-muted truncate max-w-[150px]">{adminEmail}</p>
+            </div>
+          </div>
           <button onClick={logout} className="text-text-muted hover:bg-surface-elevated p-3 rounded-lg flex items-center gap-3 text-sm transition-all w-full text-left">
             <MaterialIcon name="logout" size={20} /> Log Out
           </button>
@@ -80,35 +86,6 @@ export function DashboardLayout({
       </aside>
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-outline-variant bg-surface-card/90 backdrop-blur-md px-4 py-3 lg:px-6 shrink-0">
-          <button className="lg:hidden p-2 rounded-lg hover:bg-surface-elevated" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-            <Menu className="h-5 w-5" />
-          </button>
-
-          {(title || subtitle) && (
-            <div className="flex-1 min-w-0 hidden sm:block">
-              {title && <h1 className="text-base font-bold truncate">{title}</h1>}
-              {subtitle && <p className="text-xs text-text-muted truncate">{subtitle}</p>}
-            </div>
-          )}
-          {!title && <div className="flex-1" />}
-
-          <div className="hidden md:flex items-center gap-2 rounded-lg border border-outline-variant px-3 py-1.5">
-            <div className="h-7 w-7 rounded-lg bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-xs font-bold">
-              {adminEmail.charAt(0).toUpperCase()}
-            </div>
-            <div className="text-xs">
-              <p className="font-semibold leading-tight">{role}</p>
-              <p className="text-text-muted truncate max-w-[120px]">{adminEmail}</p>
-            </div>
-          </div>
-        </header>
-
-        <div className="bg-primary text-white text-center text-xs py-1.5 font-medium flex items-center justify-center gap-2 shrink-0">
-          <MaterialIcon name="science" size={14} />
-          SehatVaani Admin — UI prototype with mock data for team review
-        </div>
-
         <main
           className={cn(
             "flex-1 min-h-0",

@@ -37,30 +37,49 @@ export default function BillingPage() {
     return "danger";
   };
 
+  const handleExport = () => {
+    addToast("Exporting payment records as CSV...", "success");
+  };
+
+  const handleDownloadInvoice = (id: number) => {
+    addToast(`Downloading invoice for payment #${id}...`, "success");
+  };
+
   return (
     <AuthGuard>
-      <DashboardLayout title="Billing Overview" subtitle="Transaction ledger and payment analytics">
+      <DashboardLayout>
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Total Revenue" value={formatCurrency(stats.revenue)} icon={IndianRupee} color="green" valueClassName="text-emerald-700" />
-            <StatCard label="Successful Payments" value={stats.success} icon={CheckCircle} color="brand" />
-            <StatCard label="Pending Settlements" value={stats.pending} icon={Clock} color="amber" valueClassName="text-amber-700" />
-            <StatCard label="Failed Payments" value={stats.failed} icon={XCircle} color="red" valueClassName="text-red-600" />
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-bold">Payment Management</h1>
+            <button
+              onClick={handleExport}
+              className="rounded-lg border border-outline-variant px-4 py-2 text-xs font-semibold uppercase hover:bg-surface-elevated"
+            >
+              Export CSV
+            </button>
           </div>
           <TableCard
             title="Transaction Ledger"
             toolbar={<div className="w-full md:w-72"><SearchBar value={search} onChange={setSearch} onSearch={() => setQuery(search)} placeholder="Search transactions..." /></div>}
             filters={<FilterPills options={[{ label: "All", value: "all" }, { label: "Captured", value: "captured" }, { label: "Pending", value: "pending" }, { label: "Failed", value: "failed" }]} active={filter} onChange={setFilter} />}
           >
-            <DataTable headers={["Transaction ID", "Customer", "Amount", "Method", "Status", "Date"]}>
+            <DataTable headers={["Transaction ID", "Customer", "Amount", "Method", "Status", "Date", "Actions"]}>
               {filtered.map((p) => (
                 <tr key={p.id} className="border-b border-outline-variant/30 hover:bg-surface-low h-12">
                   <td className="p-4 font-mono text-xs text-primary font-semibold">{p.transaction_id || `#${p.id}`}</td>
                   <td className="p-4 font-medium">{p.customer_name}</td>
                   <td className="p-4 font-semibold font-mono">{formatCurrency(p.amount)}</td>
-                  <td className="p-4"><MethodBadge method={p.payment_method} /></td>
+                  <td className="p-4"><MethodBadge method={p.payment_method || "UPI"} /></td>
                   <td className="p-4"><Badge variant={statusVariant(p.status)}>{p.status}</Badge></td>
                   <td className="p-4 text-text-muted">{formatDate(p.payment_date)}</td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => handleDownloadInvoice(p.id)}
+                      className="text-xs text-primary font-semibold hover:underline"
+                    >
+                      Invoice
+                    </button>
+                  </td>
                 </tr>
               ))}
             </DataTable>
