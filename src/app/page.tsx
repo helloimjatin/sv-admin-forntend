@@ -11,12 +11,12 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 const FEATURES = [
   "Real-time analytics & activity feed",
   "Command palette quick search (⌘K)",
-  "Dark mode & responsive design",
+  "Responsive design across devices",
   "Full user profile management",
 ];
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useApp();
+  const { login, isAuthenticated, authReady } = useApp();
   const router = useRouter();
   const [email, setEmail] = useState(DEMO_CREDENTIALS.email);
   const [password, setPassword] = useState(DEMO_CREDENTIALS.password);
@@ -25,10 +25,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) router.replace("/dashboard");
-  }, [isAuthenticated, router]);
+    if (authReady && isAuthenticated) router.replace("/dashboard");
+  }, [authReady, isAuthenticated, router]);
 
-  if (isAuthenticated) return null;
+  if (!authReady || isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" aria-label="Loading" />
+      </div>
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

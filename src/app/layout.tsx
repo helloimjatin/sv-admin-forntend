@@ -3,7 +3,6 @@ import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { ToastContainer } from "@/components/ui/ToastContainer";
-import { CommandPalette } from "@/components/ui/CommandPalette";
 
 const hanken = Hanken_Grotesk({
   subsets: ["latin"],
@@ -33,7 +32,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AppProvider>
           {children}
           <ToastContainer />
-          <CommandPalette />
         </AppProvider>
       </body>
     </html>

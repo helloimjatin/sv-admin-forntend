@@ -29,7 +29,9 @@ import {
   setUserStatus,
   softDeleteManagedUser,
   statusBadgeVariant,
+  updateManagedUser,
   userAuditLogs,
+  userToForm,
 } from "@/data/userManagementData";
 import {
   addUserNotification,
@@ -62,12 +64,30 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-const MEDICAL_FIELDS = [
-  "allergies", "chronic_conditions", "current_medications", "surgery_history",
-  "family_medical_history", "smoking_status", "alcohol_consumption", "vaccination_status",
-  "last_checkup_date", "regular_doctor_name", "regular_doctor_phone",
-  "insurance_provider", "insurance_policy_number", "insurance_valid_till",
-];
+const MEDICAL_ESSENTIAL_FIELDS = [
+  "allergies",
+  "chronic_conditions",
+  "current_medications",
+] as const;
+
+const MEDICAL_ALL_FIELDS = [
+  ...MEDICAL_ESSENTIAL_FIELDS,
+  "surgery_history",
+  "family_medical_history",
+  "smoking_status",
+  "alcohol_consumption",
+  "vaccination_status",
+  "last_checkup_date",
+  "regular_doctor_name",
+  "regular_doctor_phone",
+  "insurance_provider",
+  "insurance_policy_number",
+  "insurance_valid_till",
+] as const;
+
+const PERSONAL_ESSENTIAL_FIELDS = ["name", "phone", "dob", "gender"] as const;
+
+const CONTACT_ESSENTIAL_FIELDS = ["contact_name", "relationship", "phone"] as const;
 
 function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -378,7 +398,7 @@ export function UserDetailsHub({ userId }: { userId: number }) {
 
               {tab === "personal" && (
                 <div className="space-y-4">
-                  <Card title="Complete Profile" action={<button type="button" onClick={() => { setPersonalForm({ name, phone, dob: dob.slice(0, 10), gender, height: String(height || ""), weight: String(weight || ""), medical_conditions: user?.medical_conditions || "" }); setEditPersonal(true); }} className="text-xs font-semibold text-primary">Quick Edit</button>}>
+                  <Card title="Complete Profile" action={<button type="button" onClick={() => { setPersonalForm({ name, phone, dob: dob.slice(0, 10), gender }); setEditPersonal(true); }} className="text-xs font-semibold text-primary">Quick Edit</button>}>
                     <Field label="Full Name" value={name} />
                     <Field label="User ID" value={managed?.user_id || `#${userId}`} />
                     <Field label="Email" value={email} />
@@ -440,8 +460,9 @@ export function UserDetailsHub({ userId }: { userId: number }) {
 
               {tab === "medical" && (
                 <div className="space-y-4">
-                  <Card title="Medical Profile" action={<button type="button" onClick={() => { const form: Record<string, string> = {}; MEDICAL_FIELDS.forEach((f) => { form[f] = (medical_info as Record<string, string>)?.[f] || ""; }); setMedicalForm(form); setEditMedical(true); }} className="text-xs font-semibold text-primary">Edit</button>}>
-                    {MEDICAL_FIELDS.map((f) => (
+                  <Card title="Medical Profile" action={<button type="button" onClick={() => { const form: Record<string, string> = { blood_group: managed?.blood_group || "" }; MEDICAL_ALL_FIELDS.forEach((f) => { form[f] = (medical_info as Record<string, string>)?.[f] || ""; }); setMedicalForm(form); setEditMedical(true); }} className="text-xs font-semibold text-primary">Edit</button>}>
+                    <Field label="blood group" value={managed?.blood_group} />
+                    {MEDICAL_ESSENTIAL_FIELDS.map((f) => (
                       <Field key={f} label={f.replace(/_/g, " ")} value={(medical_info as Record<string, string>)?.[f]} />
                     ))}
                   </Card>
@@ -783,7 +804,7 @@ export function UserDetailsHub({ userId }: { userId: number }) {
               <button type="button" onClick={() => setTab("billing")} className="text-left text-xs font-semibold px-3 py-2 rounded-lg border border-outline-variant hover:bg-surface-elevated">Manage Subscription</button>
               <button type="button" onClick={() => setTab("devices")} className="text-left text-xs font-semibold px-3 py-2 rounded-lg border border-outline-variant hover:bg-surface-elevated">Manage Devices</button>
               <button type="button" onClick={() => setTab("security")} className="text-left text-xs font-semibold px-3 py-2 rounded-lg border border-outline-variant hover:bg-surface-elevated">Security Settings</button>
-              <Link href="/medical-records" className="text-left text-xs font-semibold px-3 py-2 rounded-lg border border-outline-variant hover:bg-surface-elevated">Open Medical Records</Link>
+              <button type="button" onClick={() => setTab("labs")} className="text-left text-xs font-semibold px-3 py-2 rounded-lg border border-outline-variant hover:bg-surface-elevated">Open Lab Reports</button>
             </div>
           </Card>
         </aside>
@@ -838,17 +859,23 @@ export function UserDetailsHub({ userId }: { userId: number }) {
 
       <Modal open={editPersonal} onClose={() => setEditPersonal(false)} title="Edit Personal Details">
         <div className="space-y-3">
-          {["name", "phone", "dob", "gender", "height", "weight", "medical_conditions"].map((f) => (
+          {PERSONAL_ESSENTIAL_FIELDS.map((f) => (
             <div key={f}>
               <label className="text-xs font-semibold uppercase text-text-muted capitalize">{f.replace(/_/g, " ")}</label>
-              <input value={personalForm[f] || ""} onChange={(e) => setPersonalForm({ ...personalForm, [f]: e.target.value })} className="mt-1 w-full rounded-lg border border-outline-variant px-3 py-2 text-sm outline-none focus:border-primary" />
+              <input
+                type={f === "dob" ? "date" : "text"}
+                value={personalForm[f] || ""}
+                onChange={(e) => setPersonalForm({ ...personalForm, [f]: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-outline-variant px-3 py-2 text-sm outline-none focus:border-primary"
+              />
             </div>
           ))}
           <button type="button" onClick={() => {
             updateUserPersonal(userId, {
-              name: personalForm.name, phone: personalForm.phone, dob: personalForm.dob,
-              gender: personalForm.gender, height: Number(personalForm.height) || undefined,
-              weight: Number(personalForm.weight) || undefined, medical_conditions: personalForm.medical_conditions || null,
+              name: personalForm.name,
+              phone: personalForm.phone,
+              dob: personalForm.dob,
+              gender: personalForm.gender,
             });
             addToast("Personal details updated");
             setEditPersonal(false);
@@ -857,32 +884,49 @@ export function UserDetailsHub({ userId }: { userId: number }) {
         </div>
       </Modal>
 
-      <Modal open={editMedical} onClose={() => setEditMedical(false)} title="Edit Medical Information" size="lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {MEDICAL_FIELDS.map((f) => (
+      <Modal open={editMedical} onClose={() => setEditMedical(false)} title="Edit Medical Information" size="md">
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold uppercase text-text-muted">Blood group</label>
+            <input value={medicalForm.blood_group || ""} onChange={(e) => setMedicalForm({ ...medicalForm, blood_group: e.target.value })} className="mt-1 w-full rounded-lg border border-outline-variant px-3 py-2 text-sm outline-none focus:border-primary" />
+          </div>
+          {MEDICAL_ESSENTIAL_FIELDS.map((f) => (
             <div key={f}>
               <label className="text-xs font-semibold uppercase text-text-muted capitalize">{f.replace(/_/g, " ")}</label>
               <input value={medicalForm[f] || ""} onChange={(e) => setMedicalForm({ ...medicalForm, [f]: e.target.value })} className="mt-1 w-full rounded-lg border border-outline-variant px-3 py-2 text-sm outline-none focus:border-primary" />
             </div>
           ))}
         </div>
-        <button type="button" onClick={() => { updateMedicalInfo(userId, medicalForm); addToast("Medical information updated"); setEditMedical(false); bumpRefresh(); }} className="w-full mt-4 bg-primary text-white py-2.5 rounded-lg text-sm font-semibold">Save Medical Info</button>
+        <button type="button" onClick={() => {
+          const payload: Record<string, string> = {};
+          MEDICAL_ALL_FIELDS.forEach((f) => {
+            payload[f] = medicalForm[f] ?? (medical_info as Record<string, string>)?.[f] ?? "";
+          });
+          updateMedicalInfo(userId, payload);
+          if (managed && medicalForm.blood_group !== managed.blood_group) {
+            updateManagedUser(userId, { ...userToForm(managed), blood_group: medicalForm.blood_group }, editor);
+          }
+          addToast("Medical information updated");
+          setEditMedical(false);
+          bumpRefresh();
+        }} className="w-full mt-4 bg-primary text-white py-2.5 rounded-lg text-sm font-semibold">Save Medical Info</button>
       </Modal>
 
       <Modal open={!!contactModal} onClose={() => setContactModal(null)} title={contactModal?.mode === "edit" ? "Edit Contact" : "Add Contact"}>
         <div className="space-y-3">
-          {(["contact_name", "relationship", "phone", "email", "address"] as const).map((f) => (
+          {CONTACT_ESSENTIAL_FIELDS.map((f) => (
             <div key={f}>
               <label className="text-xs font-semibold uppercase text-text-muted capitalize">{f.replace(/_/g, " ")}</label>
               <input value={contactForm[f]} onChange={(e) => setContactForm({ ...contactForm, [f]: e.target.value })} className="mt-1 w-full rounded-lg border border-outline-variant px-3 py-2 text-sm outline-none focus:border-primary" />
             </div>
           ))}
           <button type="button" onClick={() => {
+            const payload = { ...contactForm, email: contactForm.email || "", address: contactForm.address || "" };
             if (contactModal?.mode === "edit" && contactModal.id) {
-              updateEmergencyContact(userId, contactModal.id, contactForm);
+              updateEmergencyContact(userId, contactModal.id, payload);
               addToast("Emergency contact updated");
             } else {
-              addEmergencyContact(userId, contactForm);
+              addEmergencyContact(userId, payload);
               addToast("Emergency contact added");
             }
             setContactModal(null);

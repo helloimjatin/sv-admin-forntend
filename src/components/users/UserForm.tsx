@@ -7,10 +7,8 @@ import { PageHeader } from "@/components/ui/Primitives";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import {
   ACCOUNT_STATUSES,
-  BLOOD_GROUPS,
   DOCTORS,
   GENDERS,
-  PATIENT_TYPES,
   USER_ROLES,
   UserFormData,
   createManagedUser,
@@ -87,7 +85,7 @@ export function UserForm({ editId }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <Link href="/users" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text mb-2">
@@ -95,7 +93,7 @@ export function UserForm({ editId }: Props) {
           </Link>
           <PageHeader title={editId ? "Edit User" : "Create User"} />
           <p className="text-sm text-text-muted mt-1">
-            {editId ? "Update account details and entitlements." : "Register a new SehatVaani patient account."}
+            {editId ? "Update account details." : "Register a new patient account."}
           </p>
         </div>
         <button
@@ -108,25 +106,25 @@ export function UserForm({ editId }: Props) {
       </div>
 
       <section className={sectionClass}>
-        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Personal & Contact</h2>
+        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Basic details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <label className={labelClass}>Full Name</label>
+            <label className={labelClass}>Full name *</label>
             <input className={inputClass} value={form.full_name} onChange={(e) => patch("full_name", e.target.value)} />
             {errors.full_name && <p className={errorClass}>{errors.full_name}</p>}
           </div>
           <div>
-            <label className={labelClass}>Email</label>
+            <label className={labelClass}>Email *</label>
             <input type="email" className={inputClass} value={form.email} onChange={(e) => patch("email", e.target.value)} />
             {errors.email && <p className={errorClass}>{errors.email}</p>}
           </div>
           <div>
-            <label className={labelClass}>Mobile</label>
+            <label className={labelClass}>Mobile *</label>
             <input className={inputClass} value={form.mobile} onChange={(e) => patch("mobile", e.target.value)} placeholder="+91 9XXXXXXXXX" />
             {errors.mobile && <p className={errorClass}>{errors.mobile}</p>}
           </div>
           <div>
-            <label className={labelClass}>Date of Birth</label>
+            <label className={labelClass}>Date of birth</label>
             <input type="date" className={inputClass} value={form.dob} onChange={(e) => patch("dob", e.target.value)} />
           </div>
           <div>
@@ -136,36 +134,6 @@ export function UserForm({ editId }: Props) {
             </select>
           </div>
           <div>
-            <label className={labelClass}>Blood Group</label>
-            <select className={inputClass} value={form.blood_group} onChange={(e) => patch("blood_group", e.target.value)}>
-              {BLOOD_GROUPS.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Health ID</label>
-            <input className={inputClass} value={form.health_id} onChange={(e) => patch("health_id", e.target.value)} placeholder="Auto if empty" />
-          </div>
-          <div>
-            <label className={labelClass}>Height (cm)</label>
-            <input className={inputClass} value={form.height} onChange={(e) => patch("height", e.target.value)} />
-            {errors.height && <p className={errorClass}>{errors.height}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Weight (kg)</label>
-            <input className={inputClass} value={form.weight} onChange={(e) => patch("weight", e.target.value)} />
-            {errors.weight && <p className={errorClass}>{errors.weight}</p>}
-          </div>
-        </div>
-      </section>
-
-      <section className={sectionClass}>
-        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Address & Emergency</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Address</label>
-            <textarea className={cn(inputClass, "min-h-[72px]")} value={form.address} onChange={(e) => patch("address", e.target.value)} />
-          </div>
-          <div>
             <label className={labelClass}>City</label>
             <input className={inputClass} value={form.city} onChange={(e) => patch("city", e.target.value)} />
           </div>
@@ -173,23 +141,11 @@ export function UserForm({ editId }: Props) {
             <label className={labelClass}>State</label>
             <input className={inputClass} value={form.state} onChange={(e) => patch("state", e.target.value)} />
           </div>
-          <div>
-            <label className={labelClass}>Country</label>
-            <input className={inputClass} value={form.country} onChange={(e) => patch("country", e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Emergency Contact Name</label>
-            <input className={inputClass} value={form.emergency_contact_name} onChange={(e) => patch("emergency_contact_name", e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Emergency Contact Phone</label>
-            <input className={inputClass} value={form.emergency_contact_phone} onChange={(e) => patch("emergency_contact_phone", e.target.value)} />
-          </div>
         </div>
       </section>
 
       <section className={sectionClass}>
-        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Account & Subscription</h2>
+        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Account</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Role</label>
@@ -206,27 +162,17 @@ export function UserForm({ editId }: Props) {
             </select>
           </div>
           <div>
-            <label className={labelClass}>Patient Type</label>
-            <select className={inputClass} value={form.patient_type} onChange={(e) => patch("patient_type", e.target.value as UserFormData["patient_type"])}>
-              {PATIENT_TYPES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Subscription Plan</label>
+            <label className={labelClass}>Subscription plan</label>
             <select className={inputClass} value={form.subscription_plan_id} onChange={(e) => patch("subscription_plan_id", Number(e.target.value))}>
               {plans.map((p) => <option key={p.id} value={p.id}>{p.plan_name}</option>)}
             </select>
           </div>
           <div>
-            <label className={labelClass}>Assigned Doctor</label>
+            <label className={labelClass}>Assigned doctor</label>
             <select className={inputClass} value={form.assigned_doctor} onChange={(e) => patch("assigned_doctor", e.target.value)}>
               <option value="">Unassigned</option>
               {DOCTORS.filter((d) => d !== "Unassigned").map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
-          </div>
-          <div>
-            <label className={labelClass}>Tags (comma separated)</label>
-            <input className={inputClass} value={form.tags} onChange={(e) => patch("tags", e.target.value)} placeholder="VIP, Diabetes" />
           </div>
         </div>
       </section>

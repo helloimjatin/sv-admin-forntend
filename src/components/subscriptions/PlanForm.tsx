@@ -1,22 +1,15 @@
-"use client";
+﻿"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Modal, PageHeader } from "@/components/ui/Primitives";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import {
   BILLING_CYCLES,
-  DISPLAY_COLORS,
   FEATURE_CATALOG,
-  FEATURE_CATEGORY_LABELS,
-  FeatureCategory,
-  PLAN_BADGES,
   PLAN_STATUSES,
   PlanFormData,
-  REGION_OPTIONS,
-  VISIBILITY_OPTIONS,
-  getDefaultPlanForm,
 } from "@/data/subscriptionPlansData";
 import {
   clearPlanDraftStorage,
@@ -71,22 +64,10 @@ export function PlanForm({ editId }: Props) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [customFeature, setCustomFeature] = useState("");
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slugTouched = useRef(!!editId);
-
-  const categories = useMemo(() => {
-    const map = new Map<FeatureCategory, typeof FEATURE_CATALOG>();
-    for (const f of FEATURE_CATALOG) {
-      const list = map.get(f.category) || [];
-      list.push(f);
-      map.set(f.category, list);
-    }
-    const custom = form.features.filter((f) => f.key.startsWith("custom_"));
-    return { map, custom };
-  }, [form.features]);
 
   const patch = useCallback(<K extends keyof PlanFormData>(key: K, value: PlanFormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -145,50 +126,6 @@ export function PlanForm({ editId }: Props) {
     setDirty(true);
   }
 
-  function addCustomFeature() {
-    const label = customFeature.trim();
-    if (!label) return;
-    const key = `custom_${Date.now()}`;
-    setForm((prev) => ({
-      ...prev,
-      features: [...prev.features, { key, enabled: true, customLabel: label }],
-    }));
-    setCustomFeature("");
-    setDirty(true);
-  }
-
-  function togglePlatform(platform: "android" | "ios" | "web") {
-    setForm((prev) => {
-      const has = prev.visibility.platforms.includes(platform);
-      return {
-        ...prev,
-        visibility: {
-          ...prev.visibility,
-          platforms: has
-            ? prev.visibility.platforms.filter((p) => p !== platform)
-            : [...prev.visibility.platforms, platform],
-        },
-      };
-    });
-    setDirty(true);
-  }
-
-  function toggleRegion(region: string) {
-    setForm((prev) => {
-      const has = prev.visibility.regions.includes(region);
-      return {
-        ...prev,
-        visibility: {
-          ...prev.visibility,
-          regions: has
-            ? prev.visibility.regions.filter((r) => r !== region)
-            : [...prev.visibility.regions, region],
-        },
-      };
-    });
-    setDirty(true);
-  }
-
   function handleSave(asDraft = false) {
     const next = asDraft ? { ...form, status: "draft" as const } : form;
     const errs = validatePlanForm(next);
@@ -214,15 +151,8 @@ export function PlanForm({ editId }: Props) {
     }
   }
 
-  function resetDefaults() {
-    setForm(getDefaultPlanForm());
-    setDirty(true);
-    setErrors({});
-    addToast("Reset to defaults", "info");
-  }
-
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-3xl">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <button
@@ -233,20 +163,13 @@ export function PlanForm({ editId }: Props) {
             <MaterialIcon name="arrow_back" size={16} />
             Back to plans
           </button>
-          <PageHeader title={editId ? "Edit Plan" : "Create New Plan"} />
+          <PageHeader title={editId ? "Edit Plan" : "Create Plan"} />
           <p className="text-sm text-text-muted mt-1">
-            Configure pricing, limits, features, visibility, and subscription rules.
+            Set pricing, limits, and features.
             {dirty && <span className="ml-2 text-amber-600 font-medium">Unsaved changes</span>}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={resetDefaults}
-            className="rounded-lg border border-outline-variant px-4 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-surface-elevated"
-          >
-            Reset
-          </button>
           <button
             type="button"
             onClick={() => handleSave(true)}
@@ -266,31 +189,13 @@ export function PlanForm({ editId }: Props) {
         </div>
       </div>
 
-      {/* General */}
       <section className={sectionClass}>
-        <SectionTitle icon="info" title="General Information" description="Name, slug, badge, and display settings" />
+        <SectionTitle icon="info" title="Plan details" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Plan Name</label>
+            <label className={labelClass}>Plan name *</label>
             <input className={inputClass} value={form.name} onChange={(e) => onNameChange(e.target.value)} />
             {errors.name && <p className={errorClass}>{errors.name}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Plan Slug</label>
-            <input
-              className={inputClass}
-              value={form.slug}
-              onChange={(e) => {
-                slugTouched.current = true;
-                patch("slug", e.target.value);
-              }}
-            />
-            {errors.slug && <p className={errorClass}>{errors.slug}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Internal Code</label>
-            <input className={inputClass} value={form.internal_code} onChange={(e) => patch("internal_code", e.target.value)} />
-            {errors.internal_code && <p className={errorClass}>{errors.internal_code}</p>}
           </div>
           <div>
             <label className={labelClass}>Status</label>
@@ -303,33 +208,32 @@ export function PlanForm({ editId }: Props) {
           <div className="sm:col-span-2">
             <label className={labelClass}>Description</label>
             <textarea
-              className={cn(inputClass, "min-h-[88px] resize-y")}
+              className={cn(inputClass, "min-h-[72px] resize-y")}
               value={form.description}
               onChange={(e) => patch("description", e.target.value)}
             />
-            {errors.description && <p className={errorClass}>{errors.description}</p>}
           </div>
-          <div>
-            <label className={labelClass}>Icon (Material Symbol)</label>
-            <input className={inputClass} value={form.icon} onChange={(e) => patch("icon", e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Display Color</label>
-            <select className={inputClass} value={form.display_color} onChange={(e) => patch("display_color", e.target.value)}>
-              {DISPLAY_COLORS.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
+          <div className="sm:col-span-2">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.recommendation.is_recommended}
+                onChange={(e) =>
+                  patch("recommendation", { ...form.recommendation, is_recommended: e.target.checked })
+                }
+                className="rounded border-outline-variant"
+              />
+              Mark as recommended plan
+            </label>
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
       <section className={sectionClass}>
-        <SectionTitle icon="payments" title="Pricing" description="List price, discounts, trial, and tax" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <SectionTitle icon="payments" title="Pricing" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Price</label>
+            <label className={labelClass}>Price *</label>
             <input
               type="number"
               min={0}
@@ -340,7 +244,7 @@ export function PlanForm({ editId }: Props) {
             {errors.price && <p className={errorClass}>{errors.price}</p>}
           </div>
           <div>
-            <label className={labelClass}>Discounted Price</label>
+            <label className={labelClass}>Discounted price</label>
             <input
               type="number"
               min={0}
@@ -353,7 +257,6 @@ export function PlanForm({ editId }: Props) {
                 })
               }
             />
-            {errors.discounted_price && <p className={errorClass}>{errors.discounted_price}</p>}
           </div>
           <div>
             <label className={labelClass}>Currency</label>
@@ -364,11 +267,10 @@ export function PlanForm({ editId }: Props) {
             >
               <option value="INR">INR</option>
               <option value="USD">USD</option>
-              <option value="AED">AED</option>
             </select>
           </div>
           <div>
-            <label className={labelClass}>Billing Cycle</label>
+            <label className={labelClass}>Billing cycle</label>
             <select
               className={inputClass}
               value={form.pricing.billing_cycle}
@@ -379,28 +281,13 @@ export function PlanForm({ editId }: Props) {
                 })
               }
             >
-              {BILLING_CYCLES.map((c) => (
+              {BILLING_CYCLES.filter((c) => c.value !== "custom").map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
-          {form.pricing.billing_cycle === "custom" && (
-            <div>
-              <label className={labelClass}>Custom Cycle Days</label>
-              <input
-                type="number"
-                min={1}
-                className={inputClass}
-                value={form.pricing.custom_cycle_days ?? ""}
-                onChange={(e) =>
-                  patch("pricing", { ...form.pricing, custom_cycle_days: Number(e.target.value) })
-                }
-              />
-              {errors.custom_cycle_days && <p className={errorClass}>{errors.custom_cycle_days}</p>}
-            </div>
-          )}
           <div>
-            <label className={labelClass}>Trial Days</label>
+            <label className={labelClass}>Trial days</label>
             <input
               type="number"
               min={0}
@@ -409,73 +296,21 @@ export function PlanForm({ editId }: Props) {
               value={form.pricing.trial_days}
               onChange={(e) => patch("pricing", { ...form.pricing, trial_days: Number(e.target.value) })}
             />
-            {errors.trial_days && <p className={errorClass}>{errors.trial_days}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Setup Fee</label>
-            <input
-              type="number"
-              min={0}
-              className={inputClass}
-              value={form.pricing.setup_fee}
-              onChange={(e) => patch("pricing", { ...form.pricing, setup_fee: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Renewal Price</label>
-            <input
-              type="number"
-              min={0}
-              className={inputClass}
-              value={form.pricing.renewal_price ?? ""}
-              onChange={(e) =>
-                patch("pricing", {
-                  ...form.pricing,
-                  renewal_price: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Tax %</label>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              className={inputClass}
-              value={form.pricing.tax_percent}
-              onChange={(e) => patch("pricing", { ...form.pricing, tax_percent: Number(e.target.value) })}
-            />
-            {errors.tax_percent && <p className={errorClass}>{errors.tax_percent}</p>}
-          </div>
-          <div className="flex items-center gap-2 pt-6">
-            <input
-              id="tax_inclusive"
-              type="checkbox"
-              checked={form.pricing.tax_inclusive}
-              onChange={(e) => patch("pricing", { ...form.pricing, tax_inclusive: e.target.checked })}
-              className="rounded border-outline-variant"
-            />
-            <label htmlFor="tax_inclusive" className="text-sm">Tax inclusive pricing</label>
           </div>
         </div>
       </section>
 
-      {/* Limits */}
       <section className={sectionClass}>
-        <SectionTitle icon="tune" title="Plan Limits" description="Entitlement caps for devices, AI, and storage" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <SectionTitle icon="tune" title="Limits" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {(
             [
-              ["max_devices", "Maximum Devices"],
-              ["max_family_members", "Maximum Family Members"],
-              ["daily_ai_requests", "Daily AI Requests"],
-              ["monthly_ai_requests", "Monthly AI Requests"],
-              ["consultation_credits", "Consultation Credits"],
-              ["ai_credits", "AI Credits"],
-              ["storage_limit_mb", "Storage Limit (MB)"],
-              ["report_upload_limit", "Report Upload Limit"],
-              ["appointment_limit", "Appointment Limit"],
+              ["max_devices", "Max devices"],
+              ["max_family_members", "Max family members"],
+              ["monthly_ai_requests", "Monthly AI requests"],
+              ["consultation_credits", "Consultation credits"],
+              ["storage_limit_mb", "Storage (MB)"],
+              ["appointment_limit", "Appointment limit"],
             ] as const
           ).map(([key, label]) => (
             <div key={key}>
@@ -487,247 +322,31 @@ export function PlanForm({ editId }: Props) {
                 value={form.limits[key]}
                 onChange={(e) => patch("limits", { ...form.limits, [key]: Number(e.target.value) })}
               />
-              {errors[key] && <p className={errorClass}>{errors[key]}</p>}
             </div>
           ))}
         </div>
       </section>
 
-      {/* Features */}
       <section className={sectionClass}>
-        <SectionTitle icon="toggle_on" title="Feature Management" description="Toggle entitlements by category" />
-        {Array.from(categories.map.entries()).map(([cat, features]) => (
-          <div key={cat}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
-              {FEATURE_CATEGORY_LABELS[cat]}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-              {features.map((f) => {
-                const current = form.features.find((x) => x.key === f.key);
-                return (
-                  <label
-                    key={f.key}
-                    className="flex items-center gap-3 rounded-lg border border-outline-variant/50 px-3 py-2.5 hover:bg-surface-elevated cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!current?.enabled}
-                      onChange={() => toggleFeature(f.key)}
-                      className="rounded border-outline-variant"
-                    />
-                    <span className="text-sm">{f.label}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        {categories.custom.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Custom</p>
-            <div className="space-y-2 mb-4">
-              {categories.custom.map((f) => (
-                <label
-                  key={f.key}
-                  className="flex items-center gap-3 rounded-lg border border-outline-variant/50 px-3 py-2.5"
-                >
-                  <input
-                    type="checkbox"
-                    checked={f.enabled}
-                    onChange={() => toggleFeature(f.key)}
-                    className="rounded border-outline-variant"
-                  />
-                  <span className="text-sm">{f.customLabel || f.key}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-        <div className="flex gap-2">
-          <input
-            className={inputClass}
-            placeholder="Add custom feature…"
-            value={customFeature}
-            onChange={(e) => setCustomFeature(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomFeature())}
-          />
-          <button
-            type="button"
-            onClick={addCustomFeature}
-            className="rounded-lg border border-outline-variant px-4 text-xs font-semibold uppercase tracking-wide shrink-0 hover:bg-surface-elevated"
-          >
-            Add
-          </button>
-        </div>
-      </section>
-
-      {/* Visibility */}
-      <section className={sectionClass}>
-        <SectionTitle icon="visibility" title="Visibility Settings" description="Who can see and buy this plan" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Visibility</label>
-            <select
-              className={inputClass}
-              value={form.visibility.visibility}
-              onChange={(e) =>
-                patch("visibility", {
-                  ...form.visibility,
-                  visibility: e.target.value as PlanFormData["visibility"]["visibility"],
-                })
-              }
-            >
-              {VISIBILITY_OPTIONS.map((v) => (
-                <option key={v.value} value={v.value}>{v.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div>
-          <p className={labelClass}>Platform Availability</p>
-          <div className="flex flex-wrap gap-2">
-            {(["android", "ios", "web"] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => togglePlatform(p)}
-                className={cn(
-                  "rounded-full px-4 py-1.5 text-xs font-semibold border transition-colors capitalize",
-                  form.visibility.platforms.includes(p)
-                    ? "bg-primary-fixed text-on-primary-fixed border-primary-fixed"
-                    : "bg-surface-card text-text-muted border-outline-variant"
-                )}
+        <SectionTitle icon="toggle_on" title="Features" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {FEATURE_CATALOG.map((f) => {
+            const current = form.features.find((x) => x.key === f.key);
+            return (
+              <label
+                key={f.key}
+                className="flex items-center gap-3 rounded-lg border border-outline-variant/50 px-3 py-2.5 hover:bg-surface-elevated cursor-pointer"
               >
-                {p}
-              </button>
-            ))}
-          </div>
-          {errors.platforms && <p className={errorClass}>{errors.platforms}</p>}
-        </div>
-        <div>
-          <p className={labelClass}>Regional Availability</p>
-          <div className="flex flex-wrap gap-2">
-            {REGION_OPTIONS.map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => toggleRegion(r)}
-                className={cn(
-                  "rounded-full px-4 py-1.5 text-xs font-semibold border transition-colors",
-                  form.visibility.regions.includes(r)
-                    ? "bg-primary-fixed text-on-primary-fixed border-primary-fixed"
-                    : "bg-surface-card text-text-muted border-outline-variant"
-                )}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-          {errors.regions && <p className={errorClass}>{errors.regions}</p>}
-        </div>
-      </section>
-
-      {/* Rules */}
-      <section className={sectionClass}>
-        <SectionTitle icon="rule" title="Subscription Rules" description="Renewal, upgrades, refunds, and proration" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {(
-            [
-              ["auto_renewal", "Auto Renewal"],
-              ["allow_upgrade", "Allow Upgrades"],
-              ["allow_downgrade", "Allow Downgrades"],
-              ["refund_eligible", "Refund Eligible"],
-              ["prorate_upgrades", "Prorate Upgrades"],
-              ["prorate_downgrades", "Prorate Downgrades"],
-            ] as const
-          ).map(([key, label]) => (
-            <label key={key} className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={form.rules[key]}
-                onChange={(e) => patch("rules", { ...form.rules, [key]: e.target.checked })}
-                className="rounded border-outline-variant"
-              />
-              {label}
-            </label>
-          ))}
-          <div>
-            <label className={labelClass}>Grace Period (days)</label>
-            <input
-              type="number"
-              min={0}
-              max={30}
-              className={inputClass}
-              value={form.rules.grace_period_days}
-              onChange={(e) => patch("rules", { ...form.rules, grace_period_days: Number(e.target.value) })}
-            />
-            {errors.grace_period_days && <p className={errorClass}>{errors.grace_period_days}</p>}
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Cancellation Policy</label>
-            <textarea
-              className={cn(inputClass, "min-h-[72px]")}
-              value={form.rules.cancellation_policy}
-              onChange={(e) => patch("rules", { ...form.rules, cancellation_policy: e.target.value })}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Recommendation */}
-      <section className={sectionClass}>
-        <SectionTitle icon="star" title="Recommendation Settings" description="Highlight this plan in the storefront" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {(
-            [
-              ["is_recommended", "Mark as Recommended"],
-              ["is_featured", "Featured Plan"],
-              ["is_popular", "Popular Plan"],
-            ] as const
-          ).map(([key, label]) => (
-            <label key={key} className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={form.recommendation[key]}
-                onChange={(e) =>
-                  patch("recommendation", { ...form.recommendation, [key]: e.target.checked })
-                }
-                className="rounded border-outline-variant"
-              />
-              {label}
-            </label>
-          ))}
-          <div>
-            <label className={labelClass}>Display Priority</label>
-            <input
-              type="number"
-              className={inputClass}
-              value={form.recommendation.display_priority}
-              onChange={(e) =>
-                patch("recommendation", {
-                  ...form.recommendation,
-                  display_priority: Number(e.target.value),
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Custom Badge</label>
-            <select
-              className={inputClass}
-              value={form.recommendation.badge}
-              onChange={(e) =>
-                patch("recommendation", {
-                  ...form.recommendation,
-                  badge: e.target.value as PlanFormData["recommendation"]["badge"],
-                })
-              }
-            >
-              {PLAN_BADGES.map((b) => (
-                <option key={b.value} value={b.value}>{b.label}</option>
-              ))}
-            </select>
-          </div>
+                <input
+                  type="checkbox"
+                  checked={!!current?.enabled}
+                  onChange={() => toggleFeature(f.key)}
+                  className="rounded border-outline-variant"
+                />
+                <span className="text-sm">{f.label}</span>
+              </label>
+            );
+          })}
         </div>
       </section>
 

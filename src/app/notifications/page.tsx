@@ -8,7 +8,6 @@ import {
   StatCard,
   Badge,
   Modal,
-  PageHeader,
   TableCard,
 } from "@/components/ui/Primitives";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
@@ -178,13 +177,10 @@ export default function NotificationsPage() {
       <DashboardLayout title="Notifications" subtitle="Push campaigns and delivery analytics">
         <div className="space-y-6" key={refreshKey}>
           {/* Page header */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <PageHeader title="Notifications" />
-              <p className="text-sm text-text-muted mt-1 max-w-2xl">
-                Create, schedule, and monitor healthcare push notifications across patient segments. Track delivery performance and manage campaign lifecycles.
-              </p>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p className="text-sm text-text-muted max-w-2xl">
+              Create, schedule, and monitor healthcare push notifications across patient segments. Track delivery performance and manage campaign lifecycles.
+            </p>
             <Link
               href="/notifications/create"
               className="bg-primary text-white text-xs font-semibold uppercase tracking-wide px-6 py-2.5 rounded-lg hover:bg-primary-container transition-colors shrink-0 flex items-center gap-2 self-start"
@@ -198,14 +194,22 @@ export default function NotificationsPage() {
           {/* Analytics */}
           <section aria-labelledby="analytics-heading">
             <h2 id="analytics-heading" className="sr-only">Notification Analytics</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
               <StatCard label="Total Sent" value={analytics.total_sent.toLocaleString()} icon={Send} color="brand" loading={loading} />
               <StatCard label="Delivered" value={analytics.delivered.toLocaleString()} icon={CheckCircle} color="green" loading={loading} />
               <StatCard label="Opened" value={analytics.opened.toLocaleString()} icon={Eye} color="sky" loading={loading} />
               <StatCard label="CTR" value={`${analytics.ctr}%`} icon={MousePointerClick} color="violet" loading={loading} />
               <StatCard label="Failed" value={analytics.failed.toLocaleString()} icon={XCircle} color="red" loading={loading} />
               <StatCard label="Delivery Rate" value={`${analytics.delivery_rate}%`} icon={TrendingUp} color="teal" loading={loading} />
-              <StatCard label="Last Delivery" value={formatDateTime(analytics.last_delivery_at)} icon={Clock} color="amber" loading={loading} valueClassName="!text-base" />
+              <StatCard
+                label="Last Delivery"
+                value={formatDate(analytics.last_delivery_at)}
+                icon={Clock}
+                color="amber"
+                loading={loading}
+                valueClassName="!text-xl"
+                trend={analytics.last_delivery_at ? new Date(analytics.last_delivery_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : undefined}
+              />
             </div>
           </section>
 
@@ -316,20 +320,28 @@ export default function NotificationsPage() {
                       {paginated.map((n) => (
                         <tr key={n.id} className="border-b border-outline-variant/30 hover:bg-surface-low h-14">
                           <td className="p-4 font-mono text-xs text-primary font-semibold whitespace-nowrap">{n.notification_id}</td>
-                          <td className="p-4 font-medium min-w-[140px]">{n.title}</td>
-                          <td className="p-4 text-text-muted max-w-[200px]">{truncate(n.description)}</td>
+                          <td className="p-4 font-medium max-w-[180px]">
+                            <span className="block truncate" title={n.title}>{n.title}</span>
+                          </td>
+                          <td className="p-4 text-text-muted max-w-[200px]">
+                            <span className="block truncate" title={n.description}>{truncate(n.description)}</span>
+                          </td>
                           <td className="p-4 whitespace-nowrap">
                             <Badge variant={n.delivery_type === "instant" ? "info" : "purple"}>
                               {n.delivery_type === "instant" ? "Instant" : "Scheduled"}
                             </Badge>
                           </td>
                           <td className="p-4 text-text-muted whitespace-nowrap">{n.scheduled_at ? formatDateTime(n.scheduled_at) : "—"}</td>
-                          <td className="p-4 whitespace-nowrap">{n.audience}</td>
-                          <td className="p-4 font-mono text-xs">{n.estimated_recipients.toLocaleString()}</td>
+                          <td className="p-4 max-w-[140px]">
+                            <span className="block truncate" title={n.audience}>{n.audience}</span>
+                          </td>
+                          <td className="p-4 font-mono text-xs whitespace-nowrap">{n.estimated_recipients.toLocaleString()}</td>
                           <td className="p-4 whitespace-nowrap"><Badge variant={statusVariant(n.status)}>{statusLabel(n.status)}</Badge></td>
-                          <td className="p-4 whitespace-nowrap">{n.created_by}</td>
+                          <td className="p-4 whitespace-nowrap max-w-[120px]">
+                            <span className="block truncate" title={n.created_by}>{n.created_by}</span>
+                          </td>
                           <td className="p-4 text-text-muted whitespace-nowrap">{formatDate(n.created_at)}</td>
-                          <td className="p-4 whitespace-nowrap">
+                          <td className="p-4 whitespace-nowrap relative overflow-visible">
                             <div className="relative">
                               <button
                                 type="button"
@@ -343,7 +355,7 @@ export default function NotificationsPage() {
                               </button>
                               {openMenuId === n.id && (
                                 <div
-                                  className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-lg border border-outline-variant bg-surface-card shadow-xl py-1"
+                                  className="absolute right-0 bottom-full mb-1 z-40 min-w-[160px] rounded-lg border border-outline-variant bg-surface-card shadow-xl py-1"
                                   role="menu"
                                   onClick={(e) => e.stopPropagation()}
                                 >
@@ -475,9 +487,10 @@ export default function NotificationsPage() {
           )}
         </Modal>
 
-        <Modal open={!!previewItem} onClose={() => setPreviewItem(null)} title="Notification Preview" size="lg">
+        <Modal open={!!previewItem} onClose={() => setPreviewItem(null)} title="Notification Preview" size="xl">
           {previewItem && (
             <DevicePreview
+              layout="row"
               title={previewItem.title}
               subtitle={previewItem.subtitle}
               body={previewItem.body ?? previewItem.description}

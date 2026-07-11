@@ -12,20 +12,14 @@ import {
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import {
   ACCOUNT_STATUSES,
-  AGE_GROUPS,
   AccountStatus,
-  BLOOD_GROUPS,
   DOCTORS,
-  GENDERS,
   ManagedUser,
-  PATIENT_TYPES,
   TAG_OPTIONS,
-  assignPlan,
   bulkAddTags,
   bulkAssignDoctor,
   bulkAssignPlan,
   bulkSetStatus,
-  calcAgeGroup,
   getManagedUsers,
   getUserStats,
   setUserStatus,
@@ -65,25 +59,11 @@ export function UsersPanel() {
   const [query, setQuery] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [verifyFilter, setVerifyFilter] = useState("all");
-  const [genderFilter, setGenderFilter] = useState("all");
-  const [ageFilter, setAgeFilter] = useState("all");
-  const [bloodFilter, setBloodFilter] = useState("all");
-  const [cityFilter, setCityFilter] = useState("");
-  const [stateFilter, setStateFilter] = useState("");
-  const [countryFilter, setCountryFilter] = useState("");
-  const [doctorFilter, setDoctorFilter] = useState("all");
-  const [patientTypeFilter, setPatientTypeFilter] = useState("all");
-  const [tagFilter, setTagFilter] = useState("all");
-  const [regFrom, setRegFrom] = useState("");
-  const [regTo, setRegTo] = useState("");
-  const [loginFrom, setLoginFrom] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("latest");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState<number[]>([]);
   const [menuId, setMenuId] = useState<number | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(true);
 
   const [confirm, setConfirm] = useState<{ type: string; user?: ManagedUser; ids?: number[] } | null>(null);
   const [notifyUser, setNotifyUser] = useState<ManagedUser | null>(null);
@@ -129,23 +109,6 @@ export function UsersPanel() {
     }
     if (planFilter !== "all") list = list.filter((u) => String(u.subscription_plan_id) === planFilter);
     if (statusFilter !== "all") list = list.filter((u) => u.status === statusFilter);
-    if (verifyFilter === "mobile") list = list.filter((u) => u.verification.mobile);
-    if (verifyFilter === "email") list = list.filter((u) => u.verification.email);
-    if (verifyFilter === "kyc") list = list.filter((u) => u.verification.kyc);
-    if (verifyFilter === "unverified") list = list.filter((u) => !u.verification.email || !u.verification.kyc);
-    if (genderFilter !== "all") list = list.filter((u) => u.gender === genderFilter);
-    if (ageFilter !== "all") list = list.filter((u) => calcAgeGroup(u.dob) === ageFilter);
-    if (bloodFilter !== "all") list = list.filter((u) => u.blood_group === bloodFilter);
-    if (cityFilter.trim()) list = list.filter((u) => u.city.toLowerCase().includes(cityFilter.trim().toLowerCase()));
-    if (stateFilter.trim()) list = list.filter((u) => u.state.toLowerCase().includes(stateFilter.trim().toLowerCase()));
-    if (countryFilter.trim()) list = list.filter((u) => u.country.toLowerCase().includes(countryFilter.trim().toLowerCase()));
-    if (doctorFilter === "unassigned") list = list.filter((u) => !u.assigned_doctor);
-    else if (doctorFilter !== "all") list = list.filter((u) => u.assigned_doctor === doctorFilter);
-    if (patientTypeFilter !== "all") list = list.filter((u) => u.patient_type === patientTypeFilter);
-    if (tagFilter !== "all") list = list.filter((u) => u.tags.includes(tagFilter));
-    if (regFrom) list = list.filter((u) => new Date(u.created_at) >= new Date(regFrom));
-    if (regTo) list = list.filter((u) => new Date(u.created_at) <= new Date(regTo + "T23:59:59"));
-    if (loginFrom) list = list.filter((u) => u.last_login && new Date(u.last_login) >= new Date(loginFrom));
 
     list = [...list].sort((a, b) => {
       if (sortKey === "name") return a.full_name.localeCompare(b.full_name);
@@ -156,11 +119,7 @@ export function UsersPanel() {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     return list;
-  }, [
-    query, planFilter, statusFilter, verifyFilter, genderFilter, ageFilter, bloodFilter,
-    cityFilter, stateFilter, countryFilter, doctorFilter, patientTypeFilter, tagFilter,
-    regFrom, regTo, loginFrom, sortKey, refreshKey,
-  ]);
+  }, [query, planFilter, statusFilter, sortKey, refreshKey]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const pageSafe = Math.min(page, totalPages);
@@ -168,7 +127,7 @@ export function UsersPanel() {
 
   useEffect(() => {
     setPage(1);
-  }, [query, planFilter, statusFilter, verifyFilter, genderFilter, ageFilter, rowsPerPage]);
+  }, [query, planFilter, statusFilter, rowsPerPage]);
 
   const allPageSelected = pageRows.length > 0 && pageRows.every((u) => selected.includes(u.id));
 
@@ -257,6 +216,14 @@ export function UsersPanel() {
               Search
             </button>
           </div>
+          <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by plan">
+            <option value="all">All plans</option>
+            {plans.map((p) => <option key={p.id} value={p.id}>{p.plan_name}</option>)}
+          </select>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by status">
+            <option value="all">All statuses</option>
+            {ACCOUNT_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
@@ -268,64 +235,7 @@ export function UsersPanel() {
             <option value="name">Sort: Name</option>
             <option value="last_login">Sort: Last Login</option>
           </select>
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((v) => !v)}
-            className="rounded-lg border border-outline-variant px-4 py-2 text-xs font-semibold uppercase tracking-wide hover:bg-surface-elevated"
-          >
-            {filtersOpen ? "Hide Filters" : "Show Filters"}
-          </button>
         </div>
-
-        {filtersOpen && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-            <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by plan">
-              <option value="all">All plans</option>
-              {plans.map((p) => <option key={p.id} value={p.id}>{p.plan_name}</option>)}
-            </select>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by status">
-              <option value="all">All statuses</option>
-              {ACCOUNT_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-            <select value={verifyFilter} onChange={(e) => setVerifyFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by verification">
-              <option value="all">Verification: All</option>
-              <option value="mobile">Mobile verified</option>
-              <option value="email">Email verified</option>
-              <option value="kyc">KYC verified</option>
-              <option value="unverified">Needs verification</option>
-            </select>
-            <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by gender">
-              <option value="all">All genders</option>
-              {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-            <select value={ageFilter} onChange={(e) => setAgeFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by age group">
-              {AGE_GROUPS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-            </select>
-            <select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by blood group">
-              <option value="all">All blood groups</option>
-              {BLOOD_GROUPS.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
-            <input value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} placeholder="City" className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by city" />
-            <input value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} placeholder="State" className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" aria-label="Filter by state" />
-            <input value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)} placeholder="Country" className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" />
-            <select value={doctorFilter} onChange={(e) => setDoctorFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm">
-              <option value="all">All doctors</option>
-              <option value="unassigned">Unassigned</option>
-              {DOCTORS.filter((d) => d !== "Unassigned").map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <select value={patientTypeFilter} onChange={(e) => setPatientTypeFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm">
-              <option value="all">All patient types</option>
-              {PATIENT_TYPES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
-            <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm">
-              <option value="all">All tags</option>
-              {TAG_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <input type="date" value={regFrom} onChange={(e) => setRegFrom(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" title="Registered from" />
-            <input type="date" value={regTo} onChange={(e) => setRegTo(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" title="Registered to" />
-            <input type="date" value={loginFrom} onChange={(e) => setLoginFrom(e.target.value)} className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm" title="Last login from" />
-          </div>
-        )}
 
         {selected.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-outline-variant/40">
@@ -451,10 +361,9 @@ export function UsersPanel() {
                           {[
                             { label: "View Profile", fn: () => router.push(`/profile/${u.id}`) },
                             { label: "Edit", fn: () => router.push(`/users/new?edit=${u.id}`), admin: true },
-                            { label: "Medical Records", fn: () => router.push(`/medical-records`) },
                             { label: "Appointments", fn: () => addToast("Appointments module linked", "info") },
                             { label: "Prescriptions", fn: () => addToast("Opening prescriptions…", "info") },
-                            { label: "Lab Reports", fn: () => router.push(`/medical-records`) },
+                            { label: "Lab Reports", fn: () => addToast("Open Lab Reports from the user profile", "info") },
                             { label: "Subscription Mgmt", fn: () => router.push(`/profile/${u.id}#subscription`) },
                             { label: "Billing History", fn: () => router.push(`/billing`) },
                             { label: "Login History", fn: () => setLoginHistoryUser(u) },

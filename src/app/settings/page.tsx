@@ -6,7 +6,7 @@ import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import { useApp } from "@/context/AppContext";
 
 export default function SettingsPage() {
-  const { adminEmail, role, darkMode, toggleDarkMode, addToast } = useApp();
+  const { adminEmail, role, addToast } = useApp();
 
   return (
     <AuthGuard>
@@ -20,16 +20,6 @@ export default function SettingsPage() {
           </div>
 
           <div className="rounded-lg border border-outline-variant/50 bg-surface-card p-6 space-y-4">
-            <h2 className="font-semibold flex items-center gap-2"><MaterialIcon name="palette" size={20} className="text-primary" /> Appearance</h2>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-text-muted">Dark Mode</span>
-              <button onClick={toggleDarkMode} className={`w-12 h-6 rounded-full transition-colors ${darkMode ? "bg-primary" : "bg-surface-elevated"}`}>
-                <span className={`block w-5 h-5 rounded-full bg-white shadow transform transition-transform ${darkMode ? "translate-x-6" : "translate-x-0.5"}`} />
-              </button>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-outline-variant/50 bg-surface-card p-6 space-y-4 lg:col-span-2">
             <h2 className="font-semibold flex items-center gap-2"><MaterialIcon name="info" size={20} className="text-primary" /> About</h2>
             <p className="text-sm text-text-muted">SehatVaani Admin Console — UI prototype mirroring the original PHP admin panel. Connect to the PHP backend API to enable live data.</p>
             <p className="text-xs font-mono text-text-muted">API Key: sehat_live_2026_secure_key · Version 2.0 (Next.js)</p>

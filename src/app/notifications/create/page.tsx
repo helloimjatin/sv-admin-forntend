@@ -17,10 +17,20 @@ function CreatePageContent() {
 export default function CreateNotificationPage() {
   return (
     <AuthGuard roles={["Super Admin", "Admin"]}>
-      <DashboardLayout title="Create Notification" subtitle="Compose and schedule push notifications">
-        <Suspense fallback={<div className="space-y-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 rounded-lg shimmer" />)}</div>}>
-          <CreatePageContent />
-        </Suspense>
+      <DashboardLayout fillHeight title="Create Notification" subtitle="Compose and schedule push notifications">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Suspense
+            fallback={
+              <div className="flex-1 p-6 space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-24 rounded-lg shimmer" />
+                ))}
+              </div>
+            }
+          >
+            <CreatePageContent />
+          </Suspense>
+        </div>
       </DashboardLayout>
     </AuthGuard>
   );
