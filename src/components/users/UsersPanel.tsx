@@ -62,17 +62,12 @@ export function UsersPanel() {
   const [sortKey, setSortKey] = useState<SortKey>("latest");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [selected, setSelected] = useState<number[]>([]);
   const [menuId, setMenuId] = useState<number | null>(null);
 
-  const [confirm, setConfirm] = useState<{ type: string; user?: ManagedUser; ids?: number[] } | null>(null);
+  const [confirm, setConfirm] = useState<{ type: string; user?: ManagedUser } | null>(null);
   const [notifyUser, setNotifyUser] = useState<ManagedUser | null>(null);
   const [notifyMsg, setNotifyMsg] = useState("");
   const [notifyChannel, setNotifyChannel] = useState<"push" | "email" | "sms" | "whatsapp">("push");
-  const [bulkPlanId, setBulkPlanId] = useState(2);
-  const [bulkDoctor, setBulkDoctor] = useState(DOCTORS[0]);
-  const [bulkTag, setBulkTag] = useState(TAG_OPTIONS[0]);
-  const [bulkModal, setBulkModal] = useState<"plan" | "doctor" | "tags" | "notify" | null>(null);
   const [loginHistoryUser, setLoginHistoryUser] = useState<ManagedUser | null>(null);
   const [devicesUser, setDevicesUser] = useState<ManagedUser | null>(null);
 
@@ -129,15 +124,7 @@ export function UsersPanel() {
     setPage(1);
   }, [query, planFilter, statusFilter, rowsPerPage]);
 
-  const allPageSelected = pageRows.length > 0 && pageRows.every((u) => selected.includes(u.id));
 
-  function toggleSelectAll() {
-    if (allPageSelected) {
-      setSelected((s) => s.filter((id) => !pageRows.some((u) => u.id === id)));
-    } else {
-      setSelected((s) => Array.from(new Set([...s, ...pageRows.map((u) => u.id)])));
-    }
-  }
 
   function runStatus(user: ManagedUser, status: AccountStatus) {
     setUserStatus(user.id, status, editor);
@@ -169,7 +156,7 @@ export function UsersPanel() {
           <button
             type="button"
             onClick={() => {
-              exportManagedUsers(selected.length ? filtered.filter((u) => selected.includes(u.id)) : filtered);
+              exportManagedUsers(filtered);
               addToast("Export ready", "success");
             }}
             className="rounded-lg border border-outline-variant px-4 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-surface-elevated inline-flex items-center gap-1"
@@ -229,20 +216,7 @@ export function UsersPanel() {
           </select>
         </div>
 
-        {selected.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-outline-variant/40">
-            <span className="text-xs font-semibold text-text-muted">{selected.length} selected</span>
-            <button type="button" onClick={() => { exportManagedUsers(filtered.filter((u) => selected.includes(u.id))); addToast("Selected users exported", "success"); }} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated">Export</button>
-            <button type="button" onClick={() => setBulkModal("plan")} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated">Assign Plan</button>
-            <button type="button" onClick={() => setBulkModal("doctor")} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated">Assign Doctor</button>
-            <button type="button" onClick={() => setBulkModal("tags")} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated">Add Tags</button>
-            <button type="button" onClick={() => setBulkModal("notify")} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated">Notify</button>
-            <button type="button" onClick={() => { bulkSetStatus(selected, "active", editor); addToast("Users activated", "success"); bumpRefresh(); setSelected([]); }} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated">Activate</button>
-            <button type="button" onClick={() => { bulkSetStatus(selected, "suspended", editor); addToast("Users suspended", "success"); bumpRefresh(); setSelected([]); }} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-elevated">Suspend</button>
-            <button type="button" onClick={() => setConfirm({ type: "bulk_delete", ids: selected })} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white">Delete</button>
-            <button type="button" onClick={() => setSelected([])} className="text-xs text-text-muted underline ml-auto">Clear</button>
-          </div>
-        )}
+
       </div>
 
       <div className="rounded-lg border border-outline-variant/50 bg-surface-card">
@@ -271,9 +245,6 @@ export function UsersPanel() {
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="bg-surface-low border-y border-outline-variant/50 text-[11px] uppercase tracking-wider text-text-muted">
-                  <th className="p-3 w-10">
-                    <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAll} aria-label="Select all on page" />
-                  </th>
                   <th className="p-3">User</th>
                   <th className="p-3">Contact</th>
                   <th className="p-3">Plan</th>
@@ -286,17 +257,7 @@ export function UsersPanel() {
               </thead>
               <tbody>
                 {pageRows.map((u) => (
-                  <tr key={u.id} className="border-b border-outline-variant/30 hover:bg-surface-elevated/40 cursor-pointer" onClick={() => router.push(`/profile/${u.id}`)}>
-                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(u.id)}
-                        onChange={() =>
-                          setSelected((s) => (s.includes(u.id) ? s.filter((x) => x !== u.id) : [...s, u.id]))
-                        }
-                        aria-label={`Select ${u.full_name}`}
-                      />
-                    </td>
+                  <tr key={u.id} className="border-b border-outline-variant/30 hover:bg-surface-elevated/40">
                     <td className="p-3">
                       <div className="flex items-center gap-3 min-w-[180px]">
                         <div className="h-9 w-9 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-xs font-bold shrink-0">
@@ -320,7 +281,7 @@ export function UsersPanel() {
                     <td className="p-3 text-xs">{u.health_score ?? "—"}</td>
                     <td className="p-3 text-xs whitespace-nowrap">{u.last_login ? formatDateTime(u.last_login) : "Never"}</td>
                     <td className="p-3 text-xs whitespace-nowrap">{formatDate(u.created_at)}</td>
-                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <td className="p-3">
                       <Link href={`/profile/${u.id}`} className="inline-flex rounded bg-primary text-white text-xs font-semibold px-3 py-1.5 hover:bg-primary-container">
                         View
                       </Link>
@@ -371,29 +332,7 @@ export function UsersPanel() {
         </div>
       </Modal>
 
-      {/* Bulk modals */}
-      <Modal open={bulkModal === "plan"} onClose={() => setBulkModal(null)} title="Bulk assign plan" size="sm">
-        <select value={bulkPlanId} onChange={(e) => setBulkPlanId(Number(e.target.value))} className="w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm mb-4">
-          {plans.map((p) => <option key={p.id} value={p.id}>{p.plan_name}</option>)}
-        </select>
-        <button type="button" onClick={() => { bulkAssignPlan(selected, bulkPlanId, editor); addToast("Plans assigned", "success"); bumpRefresh(); setBulkModal(null); setSelected([]); }} className="rounded-lg bg-primary text-white px-4 py-2 text-xs font-semibold uppercase w-full">Apply</button>
-      </Modal>
-      <Modal open={bulkModal === "doctor"} onClose={() => setBulkModal(null)} title="Bulk assign doctor" size="sm">
-        <select value={bulkDoctor} onChange={(e) => setBulkDoctor(e.target.value)} className="w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm mb-4">
-          {DOCTORS.map((d) => <option key={d} value={d}>{d}</option>)}
-        </select>
-        <button type="button" onClick={() => { bulkAssignDoctor(selected, bulkDoctor, editor); addToast("Doctors assigned", "success"); bumpRefresh(); setBulkModal(null); setSelected([]); }} className="rounded-lg bg-primary text-white px-4 py-2 text-xs font-semibold uppercase w-full">Apply</button>
-      </Modal>
-      <Modal open={bulkModal === "tags"} onClose={() => setBulkModal(null)} title="Bulk add tags" size="sm">
-        <select value={bulkTag} onChange={(e) => setBulkTag(e.target.value)} className="w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm mb-4">
-          {TAG_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <button type="button" onClick={() => { bulkAddTags(selected, [bulkTag], editor); addToast("Tags added", "success"); bumpRefresh(); setBulkModal(null); setSelected([]); }} className="rounded-lg bg-primary text-white px-4 py-2 text-xs font-semibold uppercase w-full">Apply</button>
-      </Modal>
-      <Modal open={bulkModal === "notify"} onClose={() => setBulkModal(null)} title="Broadcast to selected" size="md">
-        <textarea value={notifyMsg} onChange={(e) => setNotifyMsg(e.target.value)} rows={4} className="w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm mb-3" placeholder="Broadcast message…" />
-        <button type="button" onClick={() => { addToast(`Broadcast queued for ${selected.length} users`, "success"); setBulkModal(null); setNotifyMsg(""); }} className="rounded-lg bg-primary text-white px-4 py-2 text-xs font-semibold uppercase w-full">Send Broadcast</button>
-      </Modal>
+
 
       <Modal open={!!loginHistoryUser} onClose={() => setLoginHistoryUser(null)} title="Login History" size="lg">
         {loginHistoryUser && (
@@ -457,10 +396,8 @@ export function UsersPanel() {
                 type="button"
                 onClick={() => {
                   if (confirm.type === "delete" && confirm.user) softDeleteManagedUser(confirm.user.id, editor);
-                  if (confirm.type === "bulk_delete" && confirm.ids) confirm.ids.forEach((id) => softDeleteManagedUser(id, editor));
-                  addToast("User(s) deleted", "success");
+                  addToast("User deleted", "success");
                   bumpRefresh();
-                  setSelected([]);
                   setConfirm(null);
                 }}
                 className="rounded-lg bg-red-600 text-white px-4 py-2 text-xs font-semibold uppercase"
