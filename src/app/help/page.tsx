@@ -15,7 +15,7 @@ const faqs = [
 export default function HelpPage() {
   return (
     <AuthGuard>
-      <DashboardLayout title="Help Center" subtitle="Guides and support for the admin console">
+      <DashboardLayout>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { icon: "menu_book", title: "Documentation", desc: "Admin panel user guide" },

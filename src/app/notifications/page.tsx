@@ -174,7 +174,7 @@ export default function NotificationsPage() {
 
   return (
     <AuthGuard roles={["Super Admin", "Admin"]}>
-      <DashboardLayout title="Notifications" subtitle="Push campaigns and delivery analytics">
+      <DashboardLayout>
         <div className="space-y-6" key={refreshKey}>
           {/* Page header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -190,28 +190,6 @@ export default function NotificationsPage() {
               Create Notification
             </Link>
           </div>
-
-          {/* Analytics */}
-          <section aria-labelledby="analytics-heading">
-            <h2 id="analytics-heading" className="sr-only">Notification Analytics</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-              <StatCard label="Total Sent" value={analytics.total_sent.toLocaleString()} icon={Send} color="brand" loading={loading} />
-              <StatCard label="Delivered" value={analytics.delivered.toLocaleString()} icon={CheckCircle} color="green" loading={loading} />
-              <StatCard label="Opened" value={analytics.opened.toLocaleString()} icon={Eye} color="sky" loading={loading} />
-              <StatCard label="CTR" value={`${analytics.ctr}%`} icon={MousePointerClick} color="violet" loading={loading} />
-              <StatCard label="Failed" value={analytics.failed.toLocaleString()} icon={XCircle} color="red" loading={loading} />
-              <StatCard label="Delivery Rate" value={`${analytics.delivery_rate}%`} icon={TrendingUp} color="teal" loading={loading} />
-              <StatCard
-                label="Last Delivery"
-                value={formatDate(analytics.last_delivery_at)}
-                icon={Clock}
-                color="amber"
-                loading={loading}
-                valueClassName="!text-xl"
-                trend={analytics.last_delivery_at ? new Date(analytics.last_delivery_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : undefined}
-              />
-            </div>
-          </section>
 
           {/* Filters */}
           <div className="rounded-lg border border-outline-variant/50 bg-surface-card p-4 space-y-4">
