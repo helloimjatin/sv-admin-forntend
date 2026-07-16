@@ -7,34 +7,34 @@ import {
   Badge,
   Modal,
   PageHeader,
-  StatCard,
 } from "@/components/ui/Primitives";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
-import { PlanCard } from "@/components/subscriptions/PlanCard";
 import {
   SubscriptionPlan,
   archivePlan,
   billingCycleLabel,
-  changePlanRank,
-  duplicatePlan,
   effectivePrice,
   getActivePlans,
-  getFeatureLabel,
-  getPlanStats,
   reorderPlans,
-  setPlanStatus,
-  setRecommendedPlan,
   softDeletePlan,
   BILLING_CYCLES,
-  PLAN_STATUSES,
   VISIBILITY_OPTIONS,
 } from "@/data/subscriptionPlansData";
 import { subscriptions } from "@/data/mockData";
 import { useApp } from "@/context/AppContext";
-import { cn, formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
-import { CreditCard, Users, FileEdit, TrendingUp } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { SortableTh, TablePagination, compareValues } from "@/components/ui/TableControls";
 
-type SortKey = "price" | "popularity" | "created";
+type SortKey = "name" | "price" | "billing_cycle" | "status" | "active_subscribers";
+
+const TABLE_HEADERS: { key: SortKey | "actions"; label: string; sortable?: boolean }[] = [
+  { key: "name", label: "Plan Name", sortable: true },
+  { key: "price", label: "Price", sortable: true },
+  { key: "billing_cycle", label: "Billing Cycle", sortable: true },
+  { key: "status", label: "Status", sortable: true },
+  { key: "active_subscribers", label: "Active Subscribers", sortable: true },
+  { key: "actions", label: "Actions" },
+];
 
 export function PlansPanel() {
   const router = useRouter();
@@ -47,11 +47,13 @@ export function PlansPanel() {
   const [cycleFilter, setCycleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [visibilityFilter, setVisibilityFilter] = useState<string>("all");
-  const [sortKey, setSortKey] = useState<SortKey>("created");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [dragId, setDragId] = useState<number | null>(null);
 
-  const [viewPlan, setViewPlan] = useState<SubscriptionPlan | null>(null);
   const [analyticsPlan, setAnalyticsPlan] = useState<SubscriptionPlan | null>(null);
   const [subscribersPlan, setSubscribersPlan] = useState<SubscriptionPlan | null>(null);
   const [confirm, setConfirm] = useState<{ type: "delete" | "archive"; plan: SubscriptionPlan } | null>(null);
@@ -64,7 +66,6 @@ export function PlansPanel() {
   useEffect(() => {
     if (menuOpenId == null) return;
     const close = () => setMenuOpenId(null);
-    // Defer so the opening click doesn't immediately close
     const t = window.setTimeout(() => window.addEventListener("click", close), 0);
     return () => {
       window.clearTimeout(t);
@@ -72,7 +73,13 @@ export function PlansPanel() {
     };
   }, [menuOpenId]);
 
-  const stats = useMemo(() => getPlanStats(), [refreshKey]);
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const plans = useMemo(() => {
     let list = getActivePlans();
@@ -87,17 +94,41 @@ export function PlansPanel() {
       );
     }
     if (cycleFilter !== "all") list = list.filter((p) => p.pricing.billing_cycle === cycleFilter);
-    if (statusFilter !== "all") list = list.filter((p) => p.status === statusFilter);
+    if (statusFilter === "active") list = list.filter((p) => p.status === "active");
+    if (statusFilter === "inactive") list = list.filter((p) => p.status !== "active");
     if (visibilityFilter !== "all") list = list.filter((p) => p.visibility.visibility === visibilityFilter);
 
-    list = [...list].sort((a, b) => {
-      if (sortKey === "price") return effectivePrice(a) - effectivePrice(b);
-      if (sortKey === "popularity") return b.analytics.active_subscribers - a.analytics.active_subscribers;
-      if (sortKey === "created") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      return a.rank - b.rank;
+    return [...list].sort((a, b) => {
+      const av =
+        sortKey === "price"
+          ? effectivePrice(a)
+          : sortKey === "billing_cycle"
+            ? a.pricing.billing_cycle
+            : sortKey === "active_subscribers"
+              ? a.analytics.active_subscribers
+              : a[sortKey];
+      const bv =
+        sortKey === "price"
+          ? effectivePrice(b)
+          : sortKey === "billing_cycle"
+            ? b.pricing.billing_cycle
+            : sortKey === "active_subscribers"
+              ? b.analytics.active_subscribers
+              : b[sortKey];
+      return compareValues(av, bv, sortDir);
     });
-    return list;
-  }, [query, cycleFilter, statusFilter, visibilityFilter, sortKey, refreshKey]);
+  }, [query, cycleFilter, statusFilter, visibilityFilter, sortKey, sortDir, refreshKey]);
+
+  const totalPages = Math.max(1, Math.ceil(plans.length / rowsPerPage));
+  const paginated = plans.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, cycleFilter, statusFilter, visibilityFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const planSubscribers = useMemo(() => {
     if (!subscribersPlan) return [];
@@ -107,17 +138,6 @@ export function PlansPanel() {
         s.plan.toLowerCase().includes(subscribersPlan.name.toLowerCase().split(" ")[0])
     );
   }, [subscribersPlan]);
-
-  function run(action: () => boolean | SubscriptionPlan | null, success: string, error = "Action failed") {
-    const result = action();
-    if (result) {
-      addToast(success, "success");
-      bumpRefresh();
-    } else {
-      addToast(error, "error");
-    }
-    setMenuOpenId(null);
-  }
 
   function onDropReorder(targetId: number) {
     if (dragId == null || dragId === targetId) {
@@ -157,13 +177,6 @@ export function PlansPanel() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard label="Total Plans" value={stats.total} icon={CreditCard} color="brand" loading={loading} />
-        <StatCard label="Active Plans" value={stats.active} icon={TrendingUp} color="green" loading={loading} />
-        <StatCard label="Drafts" value={stats.draft} icon={FileEdit} color="amber" loading={loading} />
-        <StatCard label="Active Subscribers" value={stats.subscribers} icon={Users} color="violet" loading={loading} />
-      </div>
-
       <div className="rounded-lg border border-outline-variant/50 bg-surface-card p-4 space-y-4">
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="flex flex-1 gap-2">
@@ -177,28 +190,18 @@ export function PlansPanel() {
             />
             <button
               type="button"
-              onClick={() => setQuery(search)}
+              onClick={() => { setQuery(search); setPage(1); }}
               className="rounded-lg bg-primary text-white px-5 py-2 text-xs font-semibold uppercase tracking-wide hover:bg-primary-container"
             >
               Search
             </button>
           </div>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-            aria-label="Sort plans"
-          >
-            <option value="created">Sort by creation date</option>
-            <option value="price">Sort by price</option>
-            <option value="popularity">Sort by popularity</option>
-          </select>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <select
             value={cycleFilter}
-            onChange={(e) => setCycleFilter(e.target.value)}
+            onChange={(e) => { setCycleFilter(e.target.value); setPage(1); }}
             className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm"
             aria-label="Filter by billing cycle"
           >
@@ -209,18 +212,17 @@ export function PlansPanel() {
           </select>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm"
             aria-label="Filter by status"
           >
             <option value="all">All statuses</option>
-            {PLAN_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
           </select>
           <select
             value={visibilityFilter}
-            onChange={(e) => setVisibilityFilter(e.target.value)}
+            onChange={(e) => { setVisibilityFilter(e.target.value); setPage(1); }}
             className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm"
             aria-label="Filter by visibility"
           >
@@ -233,9 +235,9 @@ export function PlansPanel() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="rounded-lg border border-outline-variant/50 bg-surface-card p-4 space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-80 rounded-lg border border-outline-variant/50 shimmer" />
+            <div key={i} className="h-14 rounded-lg shimmer" />
           ))}
         </div>
       ) : plans.length === 0 ? (
@@ -251,114 +253,71 @@ export function PlansPanel() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => onDropReorder(plan.id)}
-              className={cn(dragId === plan.id && "opacity-60")}
-            >
-              <PlanCard
-                plan={plan}
-                searchQuery={query}
-                menuOpen={menuOpenId === plan.id}
-                onMenuToggle={() => {
-                  setMenuOpenId((id) => (id === plan.id ? null : plan.id));
-                }}
-                dragHandleProps={{
-                  draggable: true,
-                  onDragStart: (e) => {
-                    e.stopPropagation();
-                    setDragId(plan.id);
-                  },
-                  onDragEnd: () => setDragId(null),
-                  onClick: (e) => e.stopPropagation(),
-                }}
-                onView={() => { setViewPlan(plan); setMenuOpenId(null); }}
-                onEdit={() => router.push(`/subscriptions/create?edit=${plan.id}`)}
-                onDuplicate={() => run(() => duplicatePlan(plan.id, editor), "Plan duplicated as draft")}
-                onDelete={() => { setConfirm({ type: "delete", plan }); setMenuOpenId(null); }}
-                onArchive={() => { setConfirm({ type: "archive", plan }); setMenuOpenId(null); }}
-                onToggleActive={() =>
-                  run(
-                    () => setPlanStatus(plan.id, plan.status === "active" ? "disabled" : "active", editor),
-                    plan.status === "active" ? "Plan deactivated" : "Plan activated"
-                  )
-                }
-                onSetRecommended={() => run(() => setRecommendedPlan(plan.id, editor), "Marked as recommended")}
-                onRankUp={() => run(() => changePlanRank(plan.id, "up", editor), "Rank updated")}
-                onRankDown={() => run(() => changePlanRank(plan.id, "down", editor), "Rank updated")}
-                onViewSubscribers={() => { setSubscribersPlan(plan); setMenuOpenId(null); }}
-                onAnalytics={() => { setAnalyticsPlan(plan); setMenuOpenId(null); }}
-              />
-            </div>
-          ))}
+        <div className="rounded-lg border border-outline-variant/50 bg-surface-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left border-collapse" role="table">
+              <thead>
+                <tr className="bg-surface-low border-y border-outline-variant/50">
+                  {TABLE_HEADERS.map((h) =>
+                    h.sortable ? (
+                      <SortableTh key={h.key} label={h.label} onClick={() => toggleSort(h.key as SortKey)} />
+                    ) : (
+                      <th key={h.key} className="p-4 text-[11px] font-semibold uppercase tracking-wider text-text-muted whitespace-nowrap">
+                        {h.label}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.map((plan) => (
+                  <tr
+                    key={plan.id}
+                    className="border-b border-outline-variant/30 hover:bg-surface-elevated/40 h-14"
+                  >
+                    <td className="p-4">
+                      <div className="font-semibold text-primary">{plan.name}</div>
+                      <div className="text-[10px] text-text-muted font-mono">{plan.plan_id}</div>
+                    </td>
+                    <td className="p-4 font-mono font-semibold">
+                      {formatCurrency(effectivePrice(plan))}
+                    </td>
+                    <td className="p-4 capitalize text-xs">
+                      {billingCycleLabel(plan.pricing.billing_cycle)}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={plan.status === "active" ? "success" : "default"}>
+                        {plan.status === "active" ? "Active" : "Inactive"}
+                      </Badge>
+                    </td>
+                    <td className="p-4 font-mono text-xs text-text-muted">
+                      {plan.analytics.active_subscribers}
+                    </td>
+                    <td className="p-4">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/subscriptions/create?edit=${plan.id}`)}
+                        className="rounded bg-primary text-white text-xs font-semibold px-3 py-1.5 hover:bg-primary-container"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <TablePagination
+            id="plans-rows-per-page"
+            page={page}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            totalItems={plans.length}
+            onPageChange={setPage}
+            onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1); }}
+          />
         </div>
       )}
-
-      {/* View modal */}
-      <Modal open={!!viewPlan} onClose={() => setViewPlan(null)} title={viewPlan?.name || "Plan"} size="lg">
-        {viewPlan && (
-          <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="info">{viewPlan.plan_id}</Badge>
-              <Badge>{viewPlan.status}</Badge>
-              <Badge>{billingCycleLabel(viewPlan.pricing.billing_cycle)}</Badge>
-              <Badge>{viewPlan.visibility.visibility}</Badge>
-            </div>
-            <p className="text-text-muted">{viewPlan.description}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg bg-surface-low p-3">
-                <p className="text-xs text-text-muted">Price</p>
-                <p className="font-semibold">{formatCurrency(effectivePrice(viewPlan))}</p>
-              </div>
-              <div className="rounded-lg bg-surface-low p-3">
-                <p className="text-xs text-text-muted">Trial</p>
-                <p className="font-semibold">{viewPlan.pricing.trial_days} days</p>
-              </div>
-              <div className="rounded-lg bg-surface-low p-3">
-                <p className="text-xs text-text-muted">Devices / Family</p>
-                <p className="font-semibold">{viewPlan.limits.max_devices} / {viewPlan.limits.max_family_members}</p>
-              </div>
-              <div className="rounded-lg bg-surface-low p-3">
-                <p className="text-xs text-text-muted">AI / Consultations</p>
-                <p className="font-semibold">{viewPlan.limits.ai_credits} / {viewPlan.limits.consultation_credits}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Features</p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                {viewPlan.features.filter((f) => f.enabled).map((f) => (
-                  <li key={f.key} className="flex items-center gap-2 text-xs">
-                    <MaterialIcon name="check" size={14} className="text-green-600" />
-                    {getFeatureLabel(f.key, f.customLabel)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <p className="text-xs text-text-muted">
-              Created {formatDateTime(viewPlan.created_at)} · Updated {formatDateTime(viewPlan.updated_at)} · v{viewPlan.version}
-            </p>
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => router.push(`/subscriptions/create?edit=${viewPlan.id}`)}
-                className="rounded-lg bg-primary text-white text-xs font-semibold uppercase tracking-wide px-5 py-2.5"
-              >
-                Edit Plan
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewPlan(null)}
-                className="rounded-lg border border-outline-variant text-xs font-semibold uppercase tracking-wide px-5 py-2.5"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
 
       {/* Analytics modal */}
       <Modal open={!!analyticsPlan} onClose={() => setAnalyticsPlan(null)} title={`${analyticsPlan?.name || ""} Analytics`} size="lg">

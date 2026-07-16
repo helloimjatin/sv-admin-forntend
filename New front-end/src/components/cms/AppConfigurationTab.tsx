@@ -75,7 +75,11 @@ export function AppConfigurationTab() {
                 )}
               >
                 <span className="truncate">{item.label}</span>
-                {e && <Badge variant={e.status === "published" ? "success" : "default"}>{e.status}</Badge>}
+                {e && (
+                  <Badge variant={e.status === "published" ? "success" : "default"}>
+                    {e.status === "published" ? "Active" : "Inactive"}
+                  </Badge>
+                )}
               </button>
             );
           })}

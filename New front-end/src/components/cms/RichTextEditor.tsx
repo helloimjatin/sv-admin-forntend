@@ -28,9 +28,10 @@ type Props = {
   onChange: (value: string) => void;
   error?: string;
   id?: string;
+  disabled?: boolean;
 };
 
-export function RichTextEditor({ value, onChange, error, id = "rich-editor" }: Props) {
+export function RichTextEditor({ value, onChange, error, id = "rich-editor", disabled = false }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   const insert = (before: string, after: string) => {
@@ -53,7 +54,7 @@ export function RichTextEditor({ value, onChange, error, id = "rich-editor" }: P
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-1 rounded-lg border border-outline-variant/50 bg-surface-low p-2" role="toolbar" aria-label="Rich text formatting">
+      <div className={cn("flex flex-wrap gap-1 rounded-lg border border-outline-variant/50 bg-surface-low p-2", disabled && "opacity-60 pointer-events-none")} role="toolbar" aria-label="Rich text formatting">
         {TOOLS.map((t) => (
           <button
             key={t.title}
@@ -74,9 +75,11 @@ export function RichTextEditor({ value, onChange, error, id = "rich-editor" }: P
         rows={10}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
         className={cn(
           "w-full rounded-lg border border-outline-variant bg-surface px-4 py-3 text-sm font-mono outline-none focus:border-primary transition-colors",
-          error && "border-red-500"
+          error && "border-red-500",
+          disabled && "bg-surface-elevated cursor-default"
         )}
         placeholder="Write page content… Use the toolbar for headings, lists, links, quotes, and more."
         aria-invalid={!!error}

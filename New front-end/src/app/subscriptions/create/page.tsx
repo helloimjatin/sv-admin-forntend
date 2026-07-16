@@ -16,7 +16,7 @@ function PlanEditor() {
 export default function CreatePlanPage() {
   return (
     <AuthGuard roles={["Super Admin", "Admin"]}>
-      <DashboardLayout title="Plan Editor" subtitle="Create or update a subscription plan">
+      <DashboardLayout title="Plan Details" subtitle="View or update a subscription plan">
         <Suspense fallback={<div className="h-40 rounded-lg shimmer" />}>
           <PlanEditor />
         </Suspense>

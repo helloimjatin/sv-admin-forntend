@@ -7,7 +7,7 @@ import { PlansPanel } from "@/components/subscriptions/PlansPanel";
 export default function SubscriptionsPage() {
   return (
     <AuthGuard roles={["Super Admin", "Admin"]}>
-      <DashboardLayout title="Subscriptions" subtitle="Plans, pricing, and entitlements">
+      <DashboardLayout>
         <PlansPanel />
       </DashboardLayout>
     </AuthGuard>

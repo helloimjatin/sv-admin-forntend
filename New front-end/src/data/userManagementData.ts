@@ -1,13 +1,6 @@
 import { users as mockUsers, addUser as mockAddUser, updateUserPersonal, deleteUser as mockDeleteUser, plans, subscriptions, updateSubscriptionPlan, cancelSubscription } from "@/data/mockData";
 
-export type AccountStatus =
-  | "active"
-  | "inactive"
-  | "suspended"
-  | "blocked"
-  | "pending_verification"
-  | "deleted"
-  | "trial";
+export type AccountStatus = "active" | "inactive";
 
 export type UserRole = "patient" | "premium_member" | "caregiver" | "doctor_linked";
 
@@ -132,11 +125,6 @@ export type UserFormData = {
 export const ACCOUNT_STATUSES: { value: AccountStatus; label: string }[] = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
-  { value: "suspended", label: "Suspended" },
-  { value: "blocked", label: "Blocked" },
-  { value: "pending_verification", label: "Pending Verification" },
-  { value: "deleted", label: "Deleted" },
-  { value: "trial", label: "Trial" },
 ];
 
 export const USER_ROLES: { value: UserRole; label: string }[] = [
@@ -222,9 +210,8 @@ function makeActivity(name: string): ActivityLogEntry[] {
 }
 
 function statusFromMock(u: { subscription_status: string; is_blocked: number }): AccountStatus {
-  if (u.is_blocked) return "blocked";
+  if (u.is_blocked) return "inactive";
   if (u.subscription_status === "expired") return "inactive";
-  if (u.subscription_status === "free") return "active";
   return "active";
 }
 
@@ -340,7 +327,7 @@ export let managedUsers: ManagedUser[] = [
     health_id: "HID-AMI-003",
     aadhaar_masked: maskAadhaar("1190"),
     role: "patient",
-    status: "blocked",
+    status: "inactive",
     verification: { mobile: true, email: false, kyc: false, doctor: false, premium: false },
     subscription_plan: "Free",
     subscription_plan_id: 1,
@@ -386,7 +373,7 @@ export let managedUsers: ManagedUser[] = [
     health_id: "HID-SNE-004",
     aadhaar_masked: maskAadhaar("7744"),
     role: "premium_member",
-    status: "trial",
+    status: "active",
     verification: { mobile: true, email: true, kyc: false, doctor: false, premium: false },
     subscription_plan: "Family Plus",
     subscription_plan_id: 4,
@@ -524,7 +511,7 @@ export let managedUsers: ManagedUser[] = [
     health_id: "HID-FAR-007",
     aadhaar_masked: maskAadhaar("2211"),
     role: "patient",
-    status: "pending_verification",
+    status: "inactive",
     verification: { mobile: true, email: false, kyc: false, doctor: false, premium: false },
     subscription_plan: "Free",
     subscription_plan_id: 1,
@@ -568,7 +555,7 @@ export let managedUsers: ManagedUser[] = [
     health_id: "HID-MEE-008",
     aadhaar_masked: maskAadhaar("9090"),
     role: "caregiver",
-    status: "suspended",
+    status: "inactive",
     verification: { mobile: true, email: true, kyc: true, doctor: false, premium: false },
     subscription_plan: "Pro Monthly",
     subscription_plan_id: 2,
@@ -622,7 +609,7 @@ export function getDefaultUserForm(): UserFormData {
     height: "",
     weight: "",
     role: "patient",
-    status: "pending_verification",
+    status: "inactive",
     patient_type: "individual",
     subscription_plan_id: 1,
     assigned_doctor: "",
@@ -673,9 +660,8 @@ export function getUserStats() {
   const list = getManagedUsers();
   return {
     total: list.length,
-    active: list.filter((u) => u.status === "active" || u.status === "trial").length,
-    blocked: list.filter((u) => u.status === "blocked" || u.status === "suspended").length,
-    pending: list.filter((u) => u.status === "pending_verification").length,
+    active: list.filter((u) => u.status === "active").length,
+    inactive: list.filter((u) => u.status === "inactive").length,
     premium: list.filter((u) => u.verification.premium || u.role === "premium_member").length,
   };
 }
@@ -691,7 +677,7 @@ function syncMockUser(u: ManagedUser) {
     height: u.height,
     weight: u.weight,
     subscription_status: u.subscription_plan_id === 1 ? "free" : plans.find((p) => p.id === u.subscription_plan_id)?.plan_code || "active",
-    is_blocked: u.status === "blocked" ? 1 : 0,
+    is_blocked: u.status === "inactive" ? 1 : 0,
   };
   if (existing) {
     updateUserPersonal(u.id, payload);
@@ -828,13 +814,12 @@ export function setUserStatus(id: number, status: AccountStatus, editor: string,
           status,
           updated_by: editor,
           updated_at: new Date().toISOString(),
-          deleted_at: status === "deleted" ? new Date().toISOString() : u.deleted_at,
         }
       : u
   );
   const mock = mockUsers.find((m) => m.id === id);
   if (mock) {
-    mock.is_blocked = status === "blocked" ? 1 : 0;
+    mock.is_blocked = status === "inactive" ? 1 : 0;
   }
   addUserAudit({ user_id: id, action: "status_change", changed_by: editor, previous_value: user.status, new_value: status, reason });
   return true;
@@ -845,10 +830,10 @@ export function softDeleteManagedUser(id: number, editor: string) {
   if (!user) return false;
   managedUsers = managedUsers.map((u) =>
     u.id === id
-      ? { ...u, status: "deleted" as AccountStatus, deleted_at: new Date().toISOString(), updated_by: editor, updated_at: new Date().toISOString() }
+      ? { ...u, status: "inactive" as AccountStatus, deleted_at: new Date().toISOString(), updated_by: editor, updated_at: new Date().toISOString() }
       : u
   );
-  addUserAudit({ user_id: id, action: "soft_delete", changed_by: editor, previous_value: user.status, new_value: "deleted" });
+  addUserAudit({ user_id: id, action: "soft_delete", changed_by: editor, previous_value: user.status, new_value: "inactive" });
   return true;
 }
 
@@ -1003,16 +988,7 @@ export function calcAgeGroup(dob: string): string {
 }
 
 export function statusBadgeVariant(status: AccountStatus): "default" | "success" | "warning" | "danger" | "info" | "purple" {
-  const map: Record<AccountStatus, "default" | "success" | "warning" | "danger" | "info" | "purple"> = {
-    active: "success",
-    inactive: "default",
-    suspended: "warning",
-    blocked: "danger",
-    pending_verification: "info",
-    deleted: "danger",
-    trial: "purple",
-  };
-  return map[status];
+  return status === "active" ? "success" : "default";
 }
 
 export function exportUsersCsv(list: ManagedUser[]) {

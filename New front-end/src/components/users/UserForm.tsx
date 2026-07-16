@@ -7,13 +7,10 @@ import { PageHeader } from "@/components/ui/Primitives";
 import { MaterialIcon } from "@/components/ui/MaterialIcon";
 import {
   ACCOUNT_STATUSES,
-  BLOOD_GROUPS,
   DOCTORS,
   GENDERS,
-  PATIENT_TYPES,
   USER_ROLES,
   UserFormData,
-  createManagedUser,
   getDefaultUserForm,
   getManagedUser,
   updateManagedUser,
@@ -41,8 +38,13 @@ export function UserForm({ editId }: Props) {
   const [form, setForm] = useState<UserFormData>(() => (existing ? userToForm(existing) : getDefaultUserForm()));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+  const [genderOpen, setGenderOpen] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [doctorOpen, setDoctorOpen] = useState(false);
 
-  if (editId && !existing) {
+  if (!editId || !existing) {
     return (
       <div className="text-center py-16 text-text-muted">
         <MaterialIcon name="error" size={40} className="text-red-500 mb-3" />
@@ -66,104 +68,102 @@ export function UserForm({ editId }: Props) {
     }
     setSaving(true);
     try {
-      if (editId) {
-        const updated = updateManagedUser(editId, form, editor);
-        if (!updated) {
-          addToast("Update failed", "error");
-          return;
-        }
-        addToast("User updated", "success");
-        bumpRefresh();
-        router.push(`/profile/${editId}`);
-      } else {
-        const created = createManagedUser(form, editor);
-        addToast(`User ${created.full_name} created`, "success");
-        bumpRefresh();
-        router.push(`/profile/${created.id}`);
+      if (!editId) {
+        addToast("Create user is not available", "error");
+        return;
       }
+      const updated = updateManagedUser(editId, form, editor);
+      if (!updated) {
+        addToast("Update failed", "error");
+        return;
+      }
+      addToast("User updated", "success");
+      bumpRefresh();
+      router.push(`/profile/${editId}`);
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <Link href="/users" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text mb-2">
             <MaterialIcon name="arrow_back" size={16} /> Back to users
           </Link>
-          <PageHeader title={editId ? "Edit User" : "Create User"} />
-          <p className="text-sm text-text-muted mt-1">
-            {editId ? "Update account details and entitlements." : "Register a new SehatVaani patient account."}
-          </p>
+          <PageHeader title="Edit User" />
+          <p className="text-sm text-text-muted mt-1">Update account details.</p>
         </div>
         <button
           type="submit"
           disabled={saving}
           className="rounded-lg bg-primary text-white px-6 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-primary-container disabled:opacity-50"
         >
-          {saving ? "Saving…" : editId ? "Save Changes" : "Create User"}
+          {saving ? "Saving…" : "Save Changes"}
         </button>
       </div>
 
       <section className={sectionClass}>
-        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Personal & Contact</h2>
+        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Basic details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <label className={labelClass}>Full Name</label>
+            <label className={labelClass}>Full name *</label>
             <input className={inputClass} value={form.full_name} onChange={(e) => patch("full_name", e.target.value)} />
             {errors.full_name && <p className={errorClass}>{errors.full_name}</p>}
           </div>
           <div>
-            <label className={labelClass}>Email</label>
+            <label className={labelClass}>Email *</label>
             <input type="email" className={inputClass} value={form.email} onChange={(e) => patch("email", e.target.value)} />
             {errors.email && <p className={errorClass}>{errors.email}</p>}
           </div>
           <div>
-            <label className={labelClass}>Mobile</label>
+            <label className={labelClass}>Mobile *</label>
             <input className={inputClass} value={form.mobile} onChange={(e) => patch("mobile", e.target.value)} placeholder="+91 9XXXXXXXXX" />
             {errors.mobile && <p className={errorClass}>{errors.mobile}</p>}
           </div>
           <div>
-            <label className={labelClass}>Date of Birth</label>
+            <label className={labelClass}>Date of birth</label>
             <input type="date" className={inputClass} value={form.dob} onChange={(e) => patch("dob", e.target.value)} />
           </div>
-          <div>
+          <div className="relative">
             <label className={labelClass}>Gender</label>
-            <select className={inputClass} value={form.gender} onChange={(e) => patch("gender", e.target.value)}>
-              {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Blood Group</label>
-            <select className={inputClass} value={form.blood_group} onChange={(e) => patch("blood_group", e.target.value)}>
-              {BLOOD_GROUPS.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Health ID</label>
-            <input className={inputClass} value={form.health_id} onChange={(e) => patch("health_id", e.target.value)} placeholder="Auto if empty" />
-          </div>
-          <div>
-            <label className={labelClass}>Height (cm)</label>
-            <input className={inputClass} value={form.height} onChange={(e) => patch("height", e.target.value)} />
-            {errors.height && <p className={errorClass}>{errors.height}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Weight (kg)</label>
-            <input className={inputClass} value={form.weight} onChange={(e) => patch("weight", e.target.value)} />
-            {errors.weight && <p className={errorClass}>{errors.weight}</p>}
-          </div>
-        </div>
-      </section>
+            <button
+              type="button"
+              onClick={() => setGenderOpen(!genderOpen)}
+              className={cn(
+                inputClass,
+                "flex items-center justify-between text-left cursor-pointer"
+              )}
+            >
+              <span>{form.gender || "Select gender"}</span>
+              <MaterialIcon name={genderOpen ? "arrow_drop_up" : "arrow_drop_down"} size={20} />
+            </button>
 
-      <section className={sectionClass}>
-        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Address & Emergency</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Address</label>
-            <textarea className={cn(inputClass, "min-h-[72px]")} value={form.address} onChange={(e) => patch("address", e.target.value)} />
+            {genderOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setGenderOpen(false)} />
+                <div className="absolute left-0 right-0 mt-1 z-20 max-h-60 overflow-y-auto rounded-lg border border-outline-variant bg-surface-card p-1 shadow-lg">
+                  {GENDERS.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => {
+                        patch("gender", g);
+                        setGenderOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-surface-elevated transition-colors",
+                        form.gender === g && "bg-primary-fixed/20 font-medium"
+                      )}
+                    >
+                      <span className="flex-1 truncate">{g}</span>
+                      {form.gender === g && <MaterialIcon name="check" size={16} className="text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           <div>
             <label className={labelClass}>City</label>
@@ -173,60 +173,200 @@ export function UserForm({ editId }: Props) {
             <label className={labelClass}>State</label>
             <input className={inputClass} value={form.state} onChange={(e) => patch("state", e.target.value)} />
           </div>
-          <div>
-            <label className={labelClass}>Country</label>
-            <input className={inputClass} value={form.country} onChange={(e) => patch("country", e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Emergency Contact Name</label>
-            <input className={inputClass} value={form.emergency_contact_name} onChange={(e) => patch("emergency_contact_name", e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Emergency Contact Phone</label>
-            <input className={inputClass} value={form.emergency_contact_phone} onChange={(e) => patch("emergency_contact_phone", e.target.value)} />
-          </div>
         </div>
       </section>
 
       <section className={sectionClass}>
-        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Account & Subscription</h2>
+        <h2 className="text-base font-semibold border-b border-outline-variant/40 pb-2">Account</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
+          <div className="relative">
             <label className={labelClass}>Role</label>
-            <select className={inputClass} value={form.role} onChange={(e) => patch("role", e.target.value as UserFormData["role"])}>
-              {USER_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
+            <button
+              type="button"
+              onClick={() => setRoleOpen(!roleOpen)}
+              className={cn(
+                inputClass,
+                "flex items-center justify-between text-left cursor-pointer"
+              )}
+            >
+              <span>{USER_ROLES.find(r => r.value === form.role)?.label || form.role}</span>
+              <MaterialIcon name={roleOpen ? "arrow_drop_up" : "arrow_drop_down"} size={20} />
+            </button>
+
+            {roleOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setRoleOpen(false)} />
+                <div className="absolute left-0 right-0 mt-1 z-20 max-h-60 overflow-y-auto rounded-lg border border-outline-variant bg-surface-card p-1 shadow-lg">
+                  {USER_ROLES.map((r) => (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => {
+                        patch("role", r.value as UserFormData["role"]);
+                        setRoleOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-surface-elevated transition-colors",
+                        form.role === r.value && "bg-primary-fixed/20 font-medium"
+                      )}
+                    >
+                      <span className="flex-1 truncate">{r.label}</span>
+                      {form.role === r.value && <MaterialIcon name="check" size={16} className="text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-          <div>
+          <div className="relative">
             <label className={labelClass}>Status</label>
-            <select className={inputClass} value={form.status} onChange={(e) => patch("status", e.target.value as UserFormData["status"])}>
-              {ACCOUNT_STATUSES.filter((s) => s.value !== "deleted").map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+            <button
+              type="button"
+              onClick={() => setStatusOpen(!statusOpen)}
+              className={cn(
+                inputClass,
+                "flex items-center justify-between text-left cursor-pointer"
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <span className={cn(
+                  "h-2 w-2 rounded-full",
+                  form.status === "active" ? "bg-green-500 animate-pulse" : "bg-gray-400"
+                )} />
+                {form.status === "active" ? "Active" : "Inactive"}
+              </span>
+              <MaterialIcon name={statusOpen ? "arrow_drop_up" : "arrow_drop_down"} size={20} />
+            </button>
+
+            {statusOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setStatusOpen(false)} />
+                <div className="absolute left-0 right-0 mt-1 z-20 rounded-lg border border-outline-variant bg-surface-card p-1 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      patch("status", "active");
+                      setStatusOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-surface-elevated transition-colors",
+                      form.status === "active" && "bg-primary-fixed/20 font-medium"
+                    )}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="flex-1">Active</span>
+                    {form.status === "active" && <MaterialIcon name="check" size={16} className="text-primary" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      patch("status", "inactive");
+                      setStatusOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-surface-elevated transition-colors",
+                      form.status === "inactive" && "bg-primary-fixed/20 font-medium"
+                    )}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-gray-400" />
+                    <span className="flex-1">Inactive</span>
+                    {form.status === "inactive" && <MaterialIcon name="check" size={16} className="text-primary" />}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-          <div>
-            <label className={labelClass}>Patient Type</label>
-            <select className={inputClass} value={form.patient_type} onChange={(e) => patch("patient_type", e.target.value as UserFormData["patient_type"])}>
-              {PATIENT_TYPES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
+          <div className="relative">
+            <label className={labelClass}>Subscription plan</label>
+            <button
+              type="button"
+              onClick={() => setPlanOpen(!planOpen)}
+              className={cn(
+                inputClass,
+                "flex items-center justify-between text-left cursor-pointer"
+              )}
+            >
+              <span>{plans.find(p => p.id === form.subscription_plan_id)?.plan_name || "Select plan"}</span>
+              <MaterialIcon name={planOpen ? "arrow_drop_up" : "arrow_drop_down"} size={20} />
+            </button>
+
+            {planOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setPlanOpen(false)} />
+                <div className="absolute left-0 right-0 mt-1 z-20 max-h-60 overflow-y-auto rounded-lg border border-outline-variant bg-surface-card p-1 shadow-lg">
+                  {plans.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        patch("subscription_plan_id", p.id);
+                        setPlanOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-surface-elevated transition-colors",
+                        form.subscription_plan_id === p.id && "bg-primary-fixed/20 font-medium"
+                      )}
+                    >
+                      <span className="flex-1 truncate">{p.plan_name}</span>
+                      {form.subscription_plan_id === p.id && <MaterialIcon name="check" size={16} className="text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-          <div>
-            <label className={labelClass}>Subscription Plan</label>
-            <select className={inputClass} value={form.subscription_plan_id} onChange={(e) => patch("subscription_plan_id", Number(e.target.value))}>
-              {plans.map((p) => <option key={p.id} value={p.id}>{p.plan_name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Assigned Doctor</label>
-            <select className={inputClass} value={form.assigned_doctor} onChange={(e) => patch("assigned_doctor", e.target.value)}>
-              <option value="">Unassigned</option>
-              {DOCTORS.filter((d) => d !== "Unassigned").map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Tags (comma separated)</label>
-            <input className={inputClass} value={form.tags} onChange={(e) => patch("tags", e.target.value)} placeholder="VIP, Diabetes" />
+          <div className="relative">
+            <label className={labelClass}>Assigned doctor</label>
+            <button
+              type="button"
+              onClick={() => setDoctorOpen(!doctorOpen)}
+              className={cn(
+                inputClass,
+                "flex items-center justify-between text-left cursor-pointer"
+              )}
+            >
+              <span>{form.assigned_doctor || "Unassigned"}</span>
+              <MaterialIcon name={doctorOpen ? "arrow_drop_up" : "arrow_drop_down"} size={20} />
+            </button>
+
+            {doctorOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setDoctorOpen(false)} />
+                <div className="absolute left-0 right-0 mt-1 z-20 max-h-60 overflow-y-auto rounded-lg border border-outline-variant bg-surface-card p-1 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      patch("assigned_doctor", "");
+                      setDoctorOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-surface-elevated transition-colors",
+                      !form.assigned_doctor && "bg-primary-fixed/20 font-medium"
+                    )}
+                  >
+                    <span className="flex-1 truncate text-text-muted">Unassigned</span>
+                    {!form.assigned_doctor && <MaterialIcon name="check" size={16} className="text-primary" />}
+                  </button>
+                  {DOCTORS.filter((d) => d !== "Unassigned").map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        patch("assigned_doctor", d);
+                        setDoctorOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-surface-elevated transition-colors",
+                        form.assigned_doctor === d && "bg-primary-fixed/20 font-medium"
+                      )}
+                    >
+                      <span className="flex-1 truncate">{d}</span>
+                      {form.assigned_doctor === d && <MaterialIcon name="check" size={16} className="text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -240,7 +380,7 @@ export function UserForm({ editId }: Props) {
           disabled={saving}
           className="rounded-lg bg-primary text-white px-6 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-primary-container disabled:opacity-50"
         >
-          {saving ? "Saving…" : editId ? "Save Changes" : "Create User"}
+          {saving ? "Saving…" : "Save Changes"}
         </button>
       </div>
     </form>

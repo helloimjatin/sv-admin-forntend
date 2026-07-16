@@ -9,6 +9,7 @@ type Toast = { id: number; message: string; type: "success" | "error" | "info" }
 
 type AppContextValue = {
   isAuthenticated: boolean;
+  authReady: boolean;
   role: AdminRole;
   adminEmail: string;
   darkMode: boolean;
@@ -31,6 +32,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [role, setRole] = useState<AdminRole>("Super Admin");
   const [adminEmail, setAdminEmail] = useState("");
   const [darkMode, setDarkMode] = useState(false);
@@ -41,29 +43,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    const saved = localStorage.getItem("sv-auth");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setIsAuthenticated(true);
-      setRole(parsed.role);
-      setAdminEmail(parsed.email);
-    }
-    const theme = localStorage.getItem("sv-theme");
-    if (theme === "dark") {
-      setDarkMode(true);
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setCommandOpen((v) => !v);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    // UI prototype: never restore a session so testers always land on login
+    localStorage.removeItem("sv-auth");
+    document.documentElement.classList.remove("dark");
+    localStorage.removeItem("sv-theme");
+    setAuthReady(true);
   }, []);
 
   const login = useCallback((email: string, password: string) => {
@@ -71,14 +55,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       setRole("Super Admin");
       setAdminEmail(email);
-      localStorage.setItem("sv-auth", JSON.stringify({ email, role: "Super Admin" }));
       return true;
     }
     if (email === "rajesh@sehatvaani.com" && password === "admin123") {
       setIsAuthenticated(true);
       setRole("Admin");
       setAdminEmail(email);
-      localStorage.setItem("sv-auth", JSON.stringify({ email, role: "Admin" }));
       return true;
     }
     return false;
@@ -87,7 +69,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setIsAuthenticated(false);
     setAdminEmail("");
-    localStorage.removeItem("sv-auth");
   }, []);
 
   const toggleDarkMode = useCallback(() => {
@@ -109,11 +90,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({
-      isAuthenticated, role, adminEmail, darkMode, sidebarOpen, toasts,
+      isAuthenticated, authReady, role, adminEmail, darkMode, sidebarOpen, toasts,
       notificationsOpen, commandOpen, login, logout, toggleDarkMode,
       setSidebarOpen, addToast, setNotificationsOpen, setCommandOpen, refreshKey, bumpRefresh,
     }),
-    [isAuthenticated, role, adminEmail, darkMode, sidebarOpen, toasts, notificationsOpen, commandOpen, login, logout, toggleDarkMode, addToast, refreshKey, bumpRefresh]
+    [isAuthenticated, authReady, role, adminEmail, darkMode, sidebarOpen, toasts, notificationsOpen, commandOpen, login, logout, toggleDarkMode, addToast, refreshKey, bumpRefresh]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

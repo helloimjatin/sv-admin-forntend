@@ -7,7 +7,7 @@ import { UsersPanel } from "@/components/users/UsersPanel";
 export default function UsersPage() {
   return (
     <AuthGuard roles={["Super Admin", "Admin", "Support", "Moderator"]}>
-      <DashboardLayout title="Users" subtitle="Patient account management">
+      <DashboardLayout>
         <UsersPanel />
       </DashboardLayout>
     </AuthGuard>

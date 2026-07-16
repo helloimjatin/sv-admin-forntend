@@ -4,20 +4,19 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuthGuard } from "@/components/layout/AuthGuard";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { CreateNotificationForm } from "@/components/notifications/CreateNotificationForm";
+import { BlogForm } from "@/components/cms/BlogForm";
 
-function CreatePageContent() {
+function EditorContent() {
   const searchParams = useSearchParams();
-  const editParam = searchParams.get("edit");
-  const editId = editParam ? Number(editParam) : undefined;
-
-  return <CreateNotificationForm editId={editId && !isNaN(editId) ? editId : undefined} />;
+  const edit = searchParams.get("edit");
+  const editId = edit ? Number(edit) : undefined;
+  return <BlogForm editId={editId && !isNaN(editId) ? editId : undefined} />;
 }
 
-export default function CreateNotificationPage() {
+export default function CreateBlogPage() {
   return (
     <AuthGuard roles={["Super Admin", "Admin"]}>
-      <DashboardLayout title="Create Notification" subtitle="Compose and schedule push notifications">
+      <DashboardLayout title="Blog Editor" subtitle="Create or edit blog articles">
         <Suspense
           fallback={
             <div className="space-y-4">
@@ -27,7 +26,7 @@ export default function CreateNotificationPage() {
             </div>
           }
         >
-          <CreatePageContent />
+          <EditorContent />
         </Suspense>
       </DashboardLayout>
     </AuthGuard>

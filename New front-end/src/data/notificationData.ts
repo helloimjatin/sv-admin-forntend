@@ -15,6 +15,7 @@ export type AudienceType =
   | "caregivers"
   | "premium"
   | "free"
+  | "expired"
   | "custom_segment";
 
 export type RecurrenceType = "none" | "daily" | "weekly" | "monthly";
@@ -128,6 +129,7 @@ export const AUDIENCE_OPTIONS: { label: string; value: AudienceType }[] = [
   { label: "Caregivers", value: "caregivers" },
   { label: "Premium Members", value: "premium" },
   { label: "Free Users", value: "free" },
+  { label: "Expired Subscribers", value: "expired" },
   { label: "Custom Segment", value: "custom_segment" },
 ];
 
@@ -196,6 +198,7 @@ export function estimateRecipientsFromForm(form: NotificationFormData): number {
     caregivers: 156,
     premium: 412,
     free: 836,
+    expired: 94,
     custom_segment: 180,
   };
 

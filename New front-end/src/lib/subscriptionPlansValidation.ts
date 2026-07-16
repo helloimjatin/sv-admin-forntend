@@ -41,7 +41,7 @@ export function validatePlanForm(form: PlanFormData): FieldErrors {
     errors.custom_cycle_days = "Custom cycle requires days ≥ 1";
   }
 
-  if (form.limits.max_devices < 1) errors.max_devices = "At least 1 device required";
+  if (form.limits.max_devices < 0) errors.max_devices = "Max devices cannot be negative";
   if (form.limits.max_family_members < 1) errors.max_family_members = "At least 1 family member slot required";
   if (form.limits.storage_limit_mb < 0) errors.storage_limit_mb = "Storage cannot be negative";
 
