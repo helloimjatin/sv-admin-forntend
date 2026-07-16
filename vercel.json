@@ -1,0 +1,8 @@
+{
+  "builds": [
+    {
+      "src": "New front-end/package.json",
+      "use": "@vercel/next"
+    }
+  ]
+}
